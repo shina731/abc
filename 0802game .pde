@@ -48,6 +48,7 @@ int invincibleTimer = 0;
 import ddf.minim.*;
 Minim minim;
 AudioPlayer footSound;
+AudioPlayer damageSound;
 
 void setup() {
   size(800, 400);
@@ -79,6 +80,7 @@ void setup() {
   //サウンドsetup
   minim = new Minim(this);
   footSound = minim.loadFile("ニュッ2.mp3");
+  damageSound = minim.loadFile("スクラッチ1.mp3");
 }
 
 void draw() {
@@ -192,6 +194,12 @@ if (timeLimit <= 0 && !deathAnimationPlaying && !gameOver) {
     life--;
     invincible = true;
     invincibleTimer = 60;
+
+    if (damageSound != null&&
+        !damageSound.isPlaying()) {
+      damageSound.rewind();
+      damageSound.play();
+    }
 
     // ノックバック（敵の反対方向へ）
     if (playerX + playerW / 2 < enemy.x + enemy.w / 2) {
@@ -454,6 +462,7 @@ void resetGame() {
 //サウンド停止
 void stop(){
   footSound.close();
+  damageSound.close();
   minim.stop();
   super.stop();
 }
