@@ -40,6 +40,11 @@ int life = 3;
 boolean invincible = false;
 int invincibleTimer = 0;
 
+//サウンド
+import ddf.minim.*;
+Minim minim;
+AudioPlayer footSound;
+
 void setup() {
   size(800, 400);
   playerY = height - 100;
@@ -65,6 +70,10 @@ void setup() {
    //日本語対応_字体「メイリオ」
   PFont font = createFont("Meiryo", 50);
   textFont(font);
+
+  //サウンドsetup
+  minim = new Minim(this);
+  footSound = minim.loadFile("ニュッ2.mp3");
 }
 
 void draw() {
@@ -285,6 +294,8 @@ void keyPressed() {
     shiftPressed = true;
   }
   if (key == ' ') {
+    footSound.rewind();
+    footSound.play();
     if (onGround) {
       velocityY = shiftPressed ? highJumpPower : jumpPower;
       onGround = false;
@@ -359,4 +370,11 @@ void resetGame() {
   gameOverTimer = 0;
   deathAnimationPlaying = false;
   deathAnimationTimer = 0;
+}
+
+//サウンド停止
+void stop(){
+  footSound.close();
+  minim.stop();
+  super.stop();
 }
