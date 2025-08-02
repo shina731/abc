@@ -24,6 +24,7 @@ boolean shiftPressed = false;
 boolean gameStarted = false;
 boolean gameOver = false;
 int gameOverTimer = 0;
+int timeLimit = 60 * 30; // 30秒（60フレーム × 秒数）
 boolean deathAnimationPlaying = false;
 int deathAnimationTimer = 0;
 
@@ -124,11 +125,20 @@ void draw() {
   knockbackX *= 0.9;
   knockbackY *= 0.9;
   
+  // 落下によるゲームオーバー
   if (playerY > height + 100 && !deathAnimationPlaying && !gameOver) {
     life = 0;
     deathAnimationPlaying = true;
     deathAnimationTimer = 10;
   }
+  
+  // 時間切れによるゲームオーバー
+timeLimit--;
+if (timeLimit <= 0 && !deathAnimationPlaying && !gameOver) {
+  life = 0;
+  deathAnimationPlaying = true;
+  deathAnimationTimer = 10;
+}
 
   onGround = false;
 
@@ -242,6 +252,11 @@ void draw() {
   popMatrix();
 
   // ライフ表示
+  fill(0);
+textSize(20);
+textAlign(RIGHT, TOP);
+text("Time: " + nf(timeLimit / 60, 2) + "s", width - 10, 10);
+
   for (int i = 0; i < life; i++) {
     fill(255, 0, 0);
     rect(10 + i * 30, 10, 20, 20);
@@ -337,6 +352,7 @@ void resetGame() {
   knockbackX = 0;
   knockbackY = 0;
   life = 3;
+  timeLimit = 60 * 30;
   invincible = false;
   invincibleTimer = 0;
   gameOver = false;
