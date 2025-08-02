@@ -11,7 +11,7 @@ float highJumpPower = -25;
 boolean onGround = false;
 float knockbackX = 0;
 float knockbackY = 0;
-
+boolean playerFacingRight = true;
 // スクロール
 float cameraX = 0;
 
@@ -35,6 +35,10 @@ ArrayList<Platform> platforms;
 Enemy enemy;
 PImage enemyTexture;  // 敵画像をグローバルで保持
 
+PImage playerTexture;
+
+PImage bg;
+
 // ライフ管理
 int life = 3;
 boolean invincible = false;
@@ -51,8 +55,9 @@ void setup() {
 
   // 敵画像読み込み（dataフォルダに enemy.png を置く）
   enemyTexture = loadImage("enemy.png");
-
+　playerTexture = loadImage("player.png");
   platforms = new ArrayList<Platform>();
+　bg=loadImage("haikei.png");
 
   // 地面
   for (int i = 0; i < 50; i++) {
@@ -77,7 +82,7 @@ void setup() {
 }
 
 void draw() {
-  background(135, 206, 235); // 空色
+  background(0); // 空色
 
   // スタート画面
   if (!gameStarted) {
@@ -176,6 +181,8 @@ if (timeLimit <= 0 && !deathAnimationPlaying && !gameOver) {
   }
 
   // 敵との衝突（ダメージ）
+ enemy.update();
+
   if (!invincible &&
       playerX + playerW > enemy.x &&
       playerX < enemy.x + enemy.w &&
@@ -246,8 +253,21 @@ if (timeLimit <= 0 && !deathAnimationPlaying && !gameOver) {
 
   // プレイヤー描画（点滅）
   if (!invincible || (invincibleTimer / 5) % 2 == 0) {
-    fill(255, 0, 0);
-    rect(playerX, playerY, playerW, playerH);
+    if (playerTexture != null) {
+      pushMatrix();
+      // 左向きなら反転表示
+      if (!playerFacingRight) {
+        translate(playerX + playerW, playerY);
+        scale(-1, 1);
+        image(playerTexture, 0, 0, playerW, playerH);
+      } else {
+        image(playerTexture, playerX, playerY, playerW, playerH);
+      }
+      popMatrix();
+    } else {
+      fill(255, 0, 0);
+      rect(playerX, playerY, playerW, playerH);
+    }
   }
 
   // 足場描画
@@ -286,9 +306,11 @@ void keyPressed() {
 
   if (key == 'a' || key == 'A') {
     leftPressed = true;
+    playerFacingRight = true;  // ← 左向きにセット
   }
   if (key == 'd' || key == 'D') {
     rightPressed = true;
+  　playerFacingRight = false;   // ← 右向きにセット
   }
   if (key == CODED && keyCode == SHIFT) {
     shiftPressed = true;
@@ -334,7 +356,16 @@ class Platform {
 // Enemyクラス（画像対応）
 class Enemy {
   float x, y, w, h;
+  float speed = 3;
+  float detectRange = 200;
+  boolean charging = false;
+  int chargeCooldown = 0;
+  int pauseTimer = 0;
+  int direction = -1;
   PImage texture;
+
+  int chasingTimer = 0;           // 追跡中の経過フレーム数
+  final int maxChasingTime = 50;  // 追跡最大時間（60フレーム＝約1秒）
 
   Enemy(float x, float y, float w, float h, PImage texture) {
     this.x = x;
@@ -344,9 +375,57 @@ class Enemy {
     this.texture = texture;
   }
 
+  void update() {
+    if (pauseTimer > 0) {
+      pauseTimer--;
+      return;
+    }
+    if (chargeCooldown > 0) {
+      chargeCooldown--;
+      return;
+    }
+    float pxCenter = playerX + playerW / 2;
+    float exCenter = x + w / 2;
+
+    boolean playerInRange = abs(pxCenter - exCenter) < detectRange;
+boolean sameHeight = abs(playerY - y) < 40;
+
+if (!charging && playerInRange && sameHeight) {
+  // プレイヤーの左右どちらにいても追跡開始
+  charging = true;
+  chasingTimer = 0;
+
+  // プレイヤーの方向を向いて突進
+  direction = (pxCenter > exCenter) ? 1 : -1;
+}
+
+
+    if (charging) {
+      chasingTimer++;
+      x += direction * speed * 2;
+
+      if (abs(pxCenter - exCenter) < 10) {
+        // プレイヤーに追いついた場合
+        charging = false;
+        pauseTimer = 30;
+        direction *= -1;
+        chargeCooldown = 60;
+      } else if (chasingTimer > maxChasingTime) {
+        // 1秒追いつけなかった場合追跡終了
+        charging = false;
+        pauseTimer = 30;
+        chargeCooldown = 60;
+      }
+    }
+  }
+
   void display() {
     if (texture != null) {
-      image(texture, x, y, w, h);
+      pushMatrix();
+      translate(x + w / 2, y);
+      scale(direction, 1);
+      image(texture, -w / 2, 0, w, h);
+      popMatrix();
     } else {
       fill(0, 0, 255);
       rect(x, y, w, h);
