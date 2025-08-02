@@ -60,6 +60,10 @@ void setup() {
 
   // 敵初期化（画像渡す）
   enemy = new Enemy(500, height - 100, 40, 60, enemyTexture);
+
+   //日本語対応_字体「メイリオ」
+  PFont font = createFont("Meiryo", 50);
+  textFont(font);
 }
 
 void draw() {
