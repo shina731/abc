@@ -55,9 +55,9 @@ void setup() {
 
   // 敵画像読み込み（dataフォルダに enemy.png を置く）
   enemyTexture = loadImage("enemy.png");
-　playerTexture = loadImage("player.png");
+  playerTexture = loadImage("player.png");
   platforms = new ArrayList<Platform>();
-　bg=loadImage("haikei.png");
+  bg=loadImage("haikei.png");
 
   // 地面
   for (int i = 0; i < 50; i++) {
@@ -82,7 +82,7 @@ void setup() {
 }
 
 void draw() {
-  background(0); // 空色
+  background(135, 206, 235); // 空色
 
   // スタート画面
   if (!gameStarted) {
@@ -310,7 +310,7 @@ void keyPressed() {
   }
   if (key == 'd' || key == 'D') {
     rightPressed = true;
-  　playerFacingRight = false;   // ← 右向きにセット
+    playerFacingRight = false;   // ← 右向きにセット
   }
   if (key == CODED && keyCode == SHIFT) {
     shiftPressed = true;
