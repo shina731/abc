@@ -178,12 +178,12 @@ if (bg != null) {
   }
   
   // 時間切れによるゲームオーバー
-timeLimit--;
-if (timeLimit <= 0 && !deathAnimationPlaying && !gameOver) {
-  life = 0;
-  deathAnimationPlaying = true;
-  deathAnimationTimer = 10;
-}
+  timeLimit--;
+  if (timeLimit <= 0 && !deathAnimationPlaying && !gameOver) {
+    life = 0;
+    deathAnimationPlaying = true;
+    deathAnimationTimer = 10;
+  }
 
   onGround = false;
 
