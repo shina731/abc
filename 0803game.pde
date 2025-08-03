@@ -108,7 +108,12 @@ void setup() {
 }
 
 void draw() {
-  background(135, 206, 235); // 空色
+  background(0); // 空色
+
+if (bg != null) {
+  image(bg, 0, 0, width, height);
+}
+
 
   // スタート画面
   if (!gameStarted) {
