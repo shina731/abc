@@ -73,9 +73,7 @@ void setup() {
   playerTexture = loadImage("player.png");
   platforms = new ArrayList<Platform>();
   bg=loadImage("haikei.png");
-
-  platforms = new ArrayList<Platform>();
-  
+ 
   itemTexture = loadImage("item.png"); // dataフォルダに item.png を置く（任意）
 
   items = new ArrayList<Item>();
