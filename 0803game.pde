@@ -32,7 +32,8 @@ boolean shiftPressed = false;
 boolean gameStarted = false;
 boolean gameOver = false;
 int gameOverTimer = 0;
-int timeLimit = 60 * 300; // 5分（60フレーム × 秒数）
+int totalTimeMillis = 5 * 60 * 1000;  // 5分（ミリ秒）
+int startTime;  // ゲーム開始時刻を記録
 boolean deathAnimationPlaying = false;
 int deathAnimationTimer = 0;
 
@@ -116,6 +117,8 @@ checkpointY = height - 100;  // 最初の開始地点
   //サウンドsetup
   minim = new Minim(this);
   footSound = minim.loadFile("ニュッ2.mp3");
+
+startTime = millis();
 }
 
 void draw() {
@@ -189,10 +192,14 @@ if (playerX < -100) {
     deathAnimationPlaying = true;
     deathAnimationTimer = 10;
   }
+ int elapsed = millis() - startTime;
+ int remaining = max(0, totalTimeMillis - elapsed);
+
+  // 秒数として表示
+  int secondsLeft = remaining / 1000;
   
   // 時間切れによるゲームオーバー
-  timeLimit--;
-  if (timeLimit <= 0 && !deathAnimationPlaying && !gameOver) {
+  if (remaining <= 0 && !deathAnimationPlaying && !gameOver) {
     life = 0;
     deathAnimationPlaying = true;
     deathAnimationTimer = 10;
@@ -406,7 +413,7 @@ if (playerX + playerW > healX && playerX < healX + healW &&
   fill(0);
   textSize(20);
   textAlign(RIGHT, TOP);
-  text("Time: " + nf(timeLimit / 60, 2) + "s", width - 10, 10);
+  text("Time: " + nf(secondsLeft, 2) + "s", width - 10, 10);
 
   for (int i = 0; i < life; i++) {
     fill(255, 0, 0);
@@ -615,7 +622,7 @@ void resetGame() {
   knockbackX = 0;
   knockbackY = 0;
   life = 3;
-  timeLimit = 60 * 300;
+  totalTimeMillis = 5 * 60 * 1000;
   invincible = false;
   invincibleTimer = 0;
   gameOver = false;
@@ -628,5 +635,5 @@ void resetGame() {
  items.add(new Item(630, height - 270, 30, 30, itemTexture));
   items.add(new Item(1880, height - 350, 30, 30, itemTexture));
   collectedItems.clear();
- 
+  startTime = millis();  // ゲームリセット時にも時間をリセット
 }
