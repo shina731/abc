@@ -1,5 +1,5 @@
 // プレイヤー変数
-float playerX = 100;
+float playerX = -90;
 float playerY = 0;
 float playerW = 40;
 float playerH = 60;
@@ -7,11 +7,14 @@ float velocityX = 0;
 float velocityY = 0;
 float gravity = 0.8;
 float jumpPower = -15;
-float highJumpPower = -25;
+float highJumpPower = -19;
 boolean onGround = false;
 float knockbackX = 0;
 float knockbackY = 0;
 boolean playerFacingRight = true;
+float checkpointX = 2400;
+float checkpointY;
+
 
 boolean isAttacking = false;
 int attackDuration = 10;  // 攻撃の持続時間（フレーム数）
@@ -29,7 +32,7 @@ boolean shiftPressed = false;
 boolean gameStarted = false;
 boolean gameOver = false;
 int gameOverTimer = 0;
-int timeLimit = 60 * 30; // 30秒（60フレーム × 秒数）
+int timeLimit = 60 * 300; // 5分（60フレーム × 秒数）
 boolean deathAnimationPlaying = false;
 int deathAnimationTimer = 0;
 
@@ -73,33 +76,38 @@ void setup() {
   playerTexture = loadImage("player.png");
   platforms = new ArrayList<Platform>();
   bg=loadImage("haikei.png");
- 
+ tyuukann = loadImage("tyuukann.png");
   itemTexture = loadImage("item.png"); // dataフォルダに item.png を置く（任意）
 
   items = new ArrayList<Item>();
   collectedItems = new ArrayList<Item>();
 
   // 空中にアイテムを設置
-  items.add(new Item(830, height - 160, 30, 30, itemTexture));
-  items.add(new Item(1800, height - 220, 30, 30, itemTexture));
+  items.add(new Item(630, height - 270, 30, 30, itemTexture));
+  items.add(new Item(1800, height - 350, 30, 30, itemTexture));
 
   // 地面
-  for (int i = 0; i < 50; i++) {
+   for (int i = -10; i < 40; i++) {
+     if (i >= 20 && i <= 27) continue; // index 20〜29 = x:1600〜2400 の地面を空ける（穴）
+  platforms.add(new Platform(i * 80, height - 40, 80, 40));
+
     platforms.add(new Platform(i * 80, height - 40, 80, 40));
+    
   }
+checkpointY = height - 100;  // 最初の開始地点
 
   // 空中ブロック
-  platforms.add(new Platform(400, height - 120, 80, 20));
-  platforms.add(new Platform(600, height - 180, 80, 20));
-  platforms.add(new Platform(800, height - 240, 80, 20));
+  platforms.add(new Platform(200, height - 120, 80, 20));
+  platforms.add(new Platform(400, height - 180, 80, 20));
+  platforms.add(new Platform(600, height - 240, 80, 20));
+ // platforms.add(new Platform(950, height - 250, 40, 250)); 
   platforms.add(new Platform(1650, height - 150, 50, 20));
   platforms.add(new Platform(1760, height - 225, 50, 20));
   platforms.add(new Platform(1870, height - 300, 50, 20));
   platforms.add(new Platform(1980, height - 225, 50, 20));
   platforms.add(new Platform(2090, height - 150, 50, 20));
-
   // 敵初期化（画像渡す）
-  enemy = new Enemy(1000, height - 100, 40, 60, enemyTexture);
+  enemy = new Enemy(1500, height - 100, 40, 60, enemyTexture);
 
    //日本語対応_字体「メイリオ」
   PFont font = createFont("Meiryo", 50);
@@ -112,7 +120,7 @@ void setup() {
 
 void draw() {
   background(0); // 空色
-
+  noStroke();
   if (bg != null) {
     image(bg, 0, 0, width, height);
   }
@@ -263,7 +271,14 @@ if (playerX < -100) {
   healed = true;   // 一度だけ回復
   println("ライフが全回復した！");
   }
-  
+
+ // 回復ポイントの範囲に入ったらチェックポイント登録
+if (playerX + playerW > healX && playerX < healX + healW &&
+    playerY + playerH > healY && playerY < healY + healH) {
+  checkpointX = healX;
+  checkpointY = healY - playerH;  // プレイヤーが床に乗ったようにする
+}
+
   for (int i = items.size() - 1; i >= 0; i--) {
   Item item = items.get(i);
     if (playerX + playerW > item.x &&
@@ -353,7 +368,7 @@ if (playerX < -100) {
     }
 
     // 攻撃描画（見た目用）
-    fill(255, 255, 0);
+    fill(255, 255, 0, 0);
     rect(axeX, axeY, axeW, axeH);
 
     // 敵に当たったか判定
@@ -384,8 +399,7 @@ if (playerX < -100) {
   }
 
   // 回復ポイント描画
-  fill(0, 255, 0); // 緑色
-  rect(healX, healY, healW, healH);
+  image(tyuukann, checkpointX, checkpointY, 40, 40);
   popMatrix();
 
     // ライフ表示
@@ -449,11 +463,7 @@ void keyPressed() {
     playerFacingRight = false;
   }
 
-  if (key == 'h' || key == 'H') {
-  isAttacking = true;
-  attackTimer = attackDuration;
-  playerFacingRight = false;
-}
+  
   
   if (key == ' ') {
     footSound.rewind();
@@ -596,14 +606,16 @@ class Item {
 
 // ゲームリセット
 void resetGame() {
-  playerX = 0;
+  playerX = -90;
   playerY = height - 100;
+  playerX = checkpointX;
+  playerY = checkpointY;
   velocityX = 0;
   velocityY = 0;
   knockbackX = 0;
   knockbackY = 0;
   life = 3;
-  timeLimit = 60 * 30;
+  timeLimit = 60 * 300;
   invincible = false;
   invincibleTimer = 0;
   gameOver = false;
@@ -613,7 +625,7 @@ void resetGame() {
   enemy = new Enemy(1500, height - 100, 40, 60, enemyTexture);
  healed = false; // 回復状態を初期化
   items.clear();
- items.add(new Item(830, height - 270, 30, 30, itemTexture));
+ items.add(new Item(630, height - 270, 30, 30, itemTexture));
   items.add(new Item(1880, height - 350, 30, 30, itemTexture));
   collectedItems.clear();
  
