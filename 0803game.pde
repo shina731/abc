@@ -108,9 +108,9 @@ void setup() {
 void draw() {
   background(0); // 空色
 
-if (bg != null) {
-  image(bg, 0, 0, width, height);
-}
+  if (bg != null) {
+    image(bg, 0, 0, width, height);
+  }
 
 
   // スタート画面
@@ -255,24 +255,24 @@ if (bg != null) {
   life = 3;        // ライフ全回復
   healed = true;   // 一度だけ回復
   println("ライフが全回復した！");
-}
+  }
   
   for (int i = items.size() - 1; i >= 0; i--) {
   Item item = items.get(i);
-  if (playerX + playerW > item.x &&
-      playerX < item.x + item.w &&
-      playerY + playerH > item.y &&
-      playerY < item.y + item.h) {
+    if (playerX + playerW > item.x &&
+        playerX < item.x + item.w &&
+        playerY + playerH > item.y &&
+        playerY < item.y + item.h) {
 
-    // アイテムを取得済みリストへ移動
-    collectedItems.add(item);
+      // アイテムを取得済みリストへ移動
+      collectedItems.add(item);
 
-    // アイテムをフィールドから削除
-    items.remove(i);
+      // アイテムをフィールドから削除
+      items.remove(i);
 
-    println("アイテムをゲット！");
+      println("アイテムをゲット！");
+    }
   }
-}
 
   // 敵との通り抜け防止（押し戻し）
   if (playerX + playerW > enemy.x &&
@@ -318,49 +318,48 @@ if (bg != null) {
         scale(-1, 1);
         image(playerTexture, 0, 0, playerW, playerH);
       } else {
-     image(playerTexture, playerX, playerY, playerW, playerH);
+       image(playerTexture, playerX, playerY, playerW, playerH);
       }
     popMatrix();
-  } else {
-    fill(255, 0, 0);
-    rect(playerX, playerY, playerW, playerH);
-   }
+    } else {
+      fill(255, 0, 0);
+      rect(playerX, playerY, playerW, playerH);
+    }
   }
 
-// クワ（攻撃）ヒットボックス
-if (isAttacking) {
-  attackTimer--;
-  if (attackTimer <= 0) {
-    isAttacking = false;
+  // クワ（攻撃）ヒットボックス
+  if (isAttacking) {
+    attackTimer--;
+    if (attackTimer <= 0) {
+      isAttacking = false;
+    }
+
+    float axeX, axeY, axeW, axeH;
+    axeW = 20;
+    axeH = 40;
+    axeY = playerY + playerH / 2 - axeH / 2;
+
+    if (playerFacingRight) {
+      axeX = playerX + playerW;
+    } else {
+      axeX = playerX - axeW;
+    }
+
+    // 攻撃描画（見た目用）
+    fill(255, 255, 0);
+    rect(axeX, axeY, axeW, axeH);
+
+    // 敵に当たったか判定
+    if (axeX + axeW > enemy.x &&
+        axeX < enemy.x + enemy.w &&
+        axeY + axeH > enemy.y &&
+        axeY < enemy.y + enemy.h) {
+      enemy.charging = false;  // 攻撃キャンセル！
+      enemy.chargeCooldown = 60;
+      enemy.pauseTimer = 30;
+      println("攻撃成功！");
+    }
   }
-
-  float axeX, axeY, axeW, axeH;
-  axeW = 20;
-  axeH = 40;
-  axeY = playerY + playerH / 2 - axeH / 2;
-
-  if (playerFacingRight) {
-    axeX = playerX + playerW;
-  } else {
-    axeX = playerX - axeW;
-  }
-
-  // 攻撃描画（見た目用）
-  fill(255, 255, 0);
-  rect(axeX, axeY, axeW, axeH);
-
-  // 敵に当たったか判定
-  if (axeX + axeW > enemy.x &&
-      axeX < enemy.x + enemy.w &&
-      axeY + axeH > enemy.y &&
-      axeY < enemy.y + enemy.h) {
-    enemy.charging = false;  // 攻撃キャンセル！
-    enemy.chargeCooldown = 60;
-    enemy.pauseTimer = 30;
-    println("攻撃成功！");
-  }
-}
-
 
   // 足場描画
   for (Platform p : platforms) {
@@ -371,41 +370,41 @@ if (isAttacking) {
   enemy.display();
   
   popMatrix();
-  
+
   // アイテム描画
-for (Item item : items) {
-  item.display();
-}
+  for (Item item : items) {
+    item.display();
+  }
 
-// 回復ポイント描画
-fill(0, 255, 0); // 緑色
-rect(healX, healY, healW, healH);
-popMatrix();
+  // 回復ポイント描画
+  fill(0, 255, 0); // 緑色
+  rect(healX, healY, healW, healH);
+  popMatrix();
 
-  // ライフ表示
-fill(0);
-textSize(20);
-textAlign(RIGHT, TOP);
-text("Time: " + nf(timeLimit / 60, 2) + "s", width - 10, 10);
+    // ライフ表示
+  fill(0);
+  textSize(20);
+  textAlign(RIGHT, TOP);
+  text("Time: " + nf(timeLimit / 60, 2) + "s", width - 10, 10);
 
   for (int i = 0; i < life; i++) {
     fill(255, 0, 0);
     rect(10 + i * 30, 10, 20, 20);
   }
-  // ゲットしたアイテムを小さく表示
-for (int i = 0; i < collectedItems.size(); i++) {
-  Item item = collectedItems.get(i);
-  float displaySize = 20;
-  float x = 10 + i * (displaySize + 5);
-  float y = 40;
+    // ゲットしたアイテムを小さく表示
+  for (int i = 0; i < collectedItems.size(); i++) {
+    Item item = collectedItems.get(i);
+    float displaySize = 20;
+    float x = 10 + i * (displaySize + 5);
+    float y = 40;
 
-  if (item.texture != null) {
-    image(item.texture, x, y, displaySize, displaySize);
-  } else {
-    fill(255, 255, 0);
-    rect(x, y, displaySize, displaySize);
+    if (item.texture != null) {
+      image(item.texture, x, y, displaySize, displaySize);
+    } else {
+      fill(255, 255, 0);
+      rect(x, y, displaySize, displaySize);
+    }
   }
-}
 }
 
 // 入力処理
@@ -432,30 +431,30 @@ void keyPressed() {
     shiftPressed = true;
   }
   if (key == 'k' || key == 'K') {
-  isAttacking = true;
-  attackTimer = attackDuration;
-  playerFacingRight = true;
-}
+    isAttacking = true;
+    attackTimer = attackDuration;
+    playerFacingRight = true;
+  }
 
-if (key == 'h' || key == 'H') {
-  isAttacking = true;
-  attackTimer = attackDuration;
-  playerFacingRight = false;
-}
+  if (key == 'h' || key == 'H') {
+    isAttacking = true;
+    attackTimer = attackDuration;
+    playerFacingRight = false;
+  }
 
-if (key == 'h' || key == 'H') {
-  // クワを左に出す
-  float axeX = playerX - 20; // ←左に出す
-  float axeY = playerY + playerH / 2 - 10;
-  float axeW = 20;
-  float axeH = 20;
+  if (key == 'h' || key == 'H') {
+    // クワを左に出す
+    float axeX = playerX - 20; // ←左に出す
+    float axeY = playerY + playerH / 2 - 10;
+    float axeW = 20;
+    float axeH = 20;
   if (enemy != null &&
       axeX < enemy.x + enemy.w &&
       axeX + axeW > enemy.x &&
       axeY < enemy.y + enemy.h &&
       axeY + axeH > enemy.y) {
-    println("敵に左から攻撃成功！");
-    // 攻撃が成功 → 敵のダメージ無効 or 敵を倒す処理
+      println("敵に左から攻撃成功！");
+      // 攻撃が成功 → 敵のダメージ無効 or 敵を倒す処理
   }
 }
   
@@ -532,16 +531,16 @@ class Enemy {
     float exCenter = x + w / 2;
 
     boolean playerInRange = abs(pxCenter - exCenter) < detectRange;
-boolean sameHeight = abs(playerY - y) < 40;
+    boolean sameHeight = abs(playerY - y) < 40;
 
-if (!charging && playerInRange && sameHeight) {
-  // プレイヤーの左右どちらにいても追跡開始
-  charging = true;
-  chasingTimer = 0;
+    if (!charging && playerInRange && sameHeight) {
+      // プレイヤーの左右どちらにいても追跡開始
+      charging = true;
+      chasingTimer = 0;
 
-  // プレイヤーの方向を向いて突進
-  direction = (pxCenter > exCenter) ? 1 : -1;
-}
+      // プレイヤーの方向を向いて突進
+      direction = (pxCenter > exCenter) ? 1 : -1;
+    }
 
 
     if (charging) {
