@@ -15,7 +15,7 @@ boolean playerFacingRight = true;
 float checkpointX = 2400;
 float checkpointY;
 PImage tyuukann;
-
+boolean reachedCheckpoint = false;
 boolean isAttacking = false;
 int attackDuration = 10;  // 攻撃の持続時間（フレーム数）
 int attackTimer = 0;
@@ -280,11 +280,14 @@ if (playerX < -100) {
   }
 
  // 回復ポイントの範囲に入ったらチェックポイント登録
-if (playerX + playerW > healX && playerX < healX + healW &&
-    playerY + playerH > healY && playerY < healY + healH) {
-  checkpointX = healX;
-  checkpointY = healY - playerH;  // プレイヤーが床に乗ったようにする
-}
+if (!reachedCheckpoint &&
+      playerX + playerW > healX && playerX < healX + healW &&
+      playerY + playerH > healY && playerY < healY + healH) {
+    checkpointX = healX;
+    checkpointY = healY - playerH;
+    reachedCheckpoint = true;
+    println("チェックポイント到達！");
+  }
 
   for (int i = items.size() - 1; i >= 0; i--) {
   Item item = items.get(i);
@@ -613,10 +616,13 @@ class Item {
 
 // ゲームリセット
 void resetGame() {
-  playerX = -90;
-  playerY = height - 100;
-  playerX = checkpointX;
-  playerY = checkpointY;
+   if (reachedCheckpoint) {
+    playerX = checkpointX;
+    playerY = checkpointY;
+  } else {
+    playerX = -90;
+    playerY = height - 100;
+  }
   velocityX = 0;
   velocityY = 0;
   knockbackX = 0;
