@@ -54,8 +54,8 @@ import ddf.minim.*;
 Minim minim;
 AudioPlayer footSound;
 
-float healX = 800;  // 回復ポイントの位置（X座標）
-float healY = height - 100; // Y座標（地面の上）
+float healX = 2400;  // 回復ポイントの位置（X座標）
+float healY = 300; // Y座標（地面の上）
 float healW = 40;
 float healH = 60;
 boolean healed = false;
@@ -80,8 +80,8 @@ void setup() {
   collectedItems = new ArrayList<Item>();
 
   // 空中にアイテムを設置
-  items.add(new Item(420, height - 160, 30, 30, itemTexture));
-  items.add(new Item(610, height - 220, 30, 30, itemTexture));
+  items.add(new Item(830, height - 160, 30, 30, itemTexture));
+  items.add(new Item(1800, height - 220, 30, 30, itemTexture));
 
   // 地面
   for (int i = 0; i < 50; i++) {
@@ -91,10 +91,15 @@ void setup() {
   // 空中ブロック
   platforms.add(new Platform(400, height - 120, 80, 20));
   platforms.add(new Platform(600, height - 180, 80, 20));
-  platforms.add(new Platform(900, height - 150, 80, 20));
+  platforms.add(new Platform(800, height - 240, 80, 20));
+  platforms.add(new Platform(1650, height - 150, 50, 20));
+  platforms.add(new Platform(1760, height - 225, 50, 20));
+  platforms.add(new Platform(1870, height - 300, 50, 20));
+  platforms.add(new Platform(1980, height - 225, 50, 20));
+  platforms.add(new Platform(2090, height - 150, 50, 20));
 
   // 敵初期化（画像渡す）
-  enemy = new Enemy(500, height - 100, 40, 60, enemyTexture);
+  enemy = new Enemy(1000, height - 100, 40, 60, enemyTexture);
 
    //日本語対応_字体「メイリオ」
   PFont font = createFont("Meiryo", 50);
@@ -156,7 +161,9 @@ void draw() {
   } else {
     velocityX = 0;
   }
-
+if (playerX < -100) {
+  playerX = -100;
+}
   // 重力
   velocityY += gravity;
 
@@ -421,11 +428,11 @@ void keyPressed() {
 
   if (key == 'a' || key == 'A') {
     leftPressed = true;
-    playerFacingRight = true;  // ← 左向きにセット
+    playerFacingRight = false;  // ← 左向きにセット
   }
   if (key == 'd' || key == 'D') {
     rightPressed = true;
-    playerFacingRight = false;   // ← 右向きにセット
+    playerFacingRight = true;   // ← 右向きにセット
   }
   if (key == CODED && keyCode == SHIFT) {
     shiftPressed = true;
@@ -443,19 +450,9 @@ void keyPressed() {
   }
 
   if (key == 'h' || key == 'H') {
-    // クワを左に出す
-    float axeX = playerX - 20; // ←左に出す
-    float axeY = playerY + playerH / 2 - 10;
-    float axeW = 20;
-    float axeH = 20;
-  if (enemy != null &&
-      axeX < enemy.x + enemy.w &&
-      axeX + axeW > enemy.x &&
-      axeY < enemy.y + enemy.h &&
-      axeY + axeH > enemy.y) {
-      println("敵に左から攻撃成功！");
-      // 攻撃が成功 → 敵のダメージ無効 or 敵を倒す処理
-  }
+  isAttacking = true;
+  attackTimer = attackDuration;
+  playerFacingRight = false;
 }
   
   if (key == ' ') {
@@ -499,7 +496,7 @@ class Platform {
 // Enemyクラス（画像対応）
 class Enemy {
   float x, y, w, h;
-  float speed = 3;
+  float speed = 2;
   float detectRange = 200;
   boolean charging = false;
   int chargeCooldown = 0;
@@ -599,7 +596,7 @@ class Item {
 
 // ゲームリセット
 void resetGame() {
-  playerX = 100;
+  playerX = 0;
   playerY = height - 100;
   velocityX = 0;
   velocityY = 0;
@@ -613,11 +610,11 @@ void resetGame() {
   gameOverTimer = 0;
   deathAnimationPlaying = false;
   deathAnimationTimer = 0;
-  
+  enemy = new Enemy(1500, height - 100, 40, 60, enemyTexture);
  healed = false; // 回復状態を初期化
-  
   items.clear();
+ items.add(new Item(830, height - 270, 30, 30, itemTexture));
+  items.add(new Item(1880, height - 350, 30, 30, itemTexture));
   collectedItems.clear();
-  items.add(new Item(425, height - 150, 30, 30, itemTexture));
-  items.add(new Item(700, height - 250, 30, 30, itemTexture));
+ 
 }
