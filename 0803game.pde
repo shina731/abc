@@ -14,7 +14,7 @@ float knockbackY = 0;
 boolean playerFacingRight = true;
 float checkpointX = 2400;
 float checkpointY;
-
+PImage tyuukann;
 
 boolean isAttacking = false;
 int attackDuration = 10;  // 攻撃の持続時間（フレーム数）
@@ -84,7 +84,7 @@ void setup() {
 
   // 空中にアイテムを設置
   items.add(new Item(630, height - 270, 30, 30, itemTexture));
-  items.add(new Item(1800, height - 350, 30, 30, itemTexture));
+  items.add(new Item(1880, height - 350, 30, 30, itemTexture));
 
   // 地面
    for (int i = -10; i < 40; i++) {
