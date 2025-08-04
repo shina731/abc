@@ -1,7 +1,7 @@
 // プレイヤー変数
 float playerX = -90;
 float playerY = 0;
-float playerW = 40;
+float playerW = 47;
 float playerH = 60;
 float velocityX = 0;
 float velocityY = 0;
@@ -17,6 +17,7 @@ float checkpointY;
 PImage tyuukann;
 boolean reachedCheckpoint = false;
 boolean isAttacking = false;
+boolean attackRight = true;
 int attackDuration = 10;  // 攻撃の持続時間（フレーム数）
 int attackTimer = 0;
 
@@ -45,7 +46,8 @@ Enemy enemy;
 PImage enemyTexture;  // 敵画像をグローバルで保持
 
 PImage playerTexture;
-
+PImage playerAttackImageR;   
+PImage playerAttackImageL;
 PImage bg;
 
 // ライフ管理
@@ -75,6 +77,8 @@ void setup() {
   // 敵画像読み込み（dataフォルダに enemy.png を置く）
   enemyTexture = loadImage("enemy.png");
   playerTexture = loadImage("player.png");
+  playerAttackImageR = loadImage("player_attack_R.png");
+  playerAttackImageL = loadImage("player_attack_R.png");
   platforms = new ArrayList<Platform>();
   bg=loadImage("haikei.png");
  tyuukann = loadImage("tyuukann.png");
@@ -119,6 +123,29 @@ checkpointY = height - 100;  // 最初の開始地点
   footSound = minim.loadFile("ニュッ2.mp3");
 
 startTime = millis();
+}
+
+void drawPlayer() {
+  PImage currentImage;
+
+  if (isAttacking) {
+    currentImage = playerAttackImageR; // 常に右向き画像
+  } else {
+    currentImage = playerTexture; // 通常画像（今は反転不要としておきます）
+  }
+
+  pushMatrix();
+   boolean drawFacingRight = isAttacking ? attackRight : playerFacingRight;
+
+ if (!drawFacingRight) {
+    translate(playerX + playerW, playerY);
+    scale(-1, 1);
+    image(currentImage, 0, 0, 70, 60);
+  } else {
+    image(currentImage, playerX, playerY, 70, 60);
+  }
+
+  popMatrix();
 }
 
 void draw() {
@@ -360,27 +387,10 @@ if (!reachedCheckpoint &&
   pushMatrix();
   translate(-cameraX, 0);
 
-  // プレイヤー描画（点滅）
-  if (!invincible || (invincibleTimer / 5) % 2 == 0) {
-    if (playerTexture != null) {
-      pushMatrix();
-      // 左向きなら反転表示
-      if (!playerFacingRight) {
-        translate(playerX + playerW, playerY);
-        scale(-1, 1);
-        image(playerTexture, 0, 0, playerW, playerH);
-      } else {
-       image(playerTexture, playerX, playerY, playerW, playerH);
-      }
-    popMatrix();
-    } else {
-      fill(255, 0, 0);
-      rect(playerX, playerY, playerW, playerH);
-    }
-  }
+  drawPlayer();
 
-  // クワ（攻撃）ヒットボックス
-  if (isAttacking) {
+  // プレイヤー描画（点滅）
+ if (isAttacking) {
     attackTimer--;
     if (attackTimer <= 0) {
       isAttacking = false;
@@ -390,14 +400,8 @@ if (!reachedCheckpoint &&
     axeW = 20;
     axeH = 40;
     axeY = playerY + playerH / 2 - axeH / 2;
+    axeX = playerFacingRight ? playerX + playerW : playerX - axeW;
 
-    if (playerFacingRight) {
-      axeX = playerX + playerW;
-    } else {
-      axeX = playerX - axeW;
-    }
-
-    // 攻撃描画（見た目用）
     fill(255, 255, 0, 0);
     rect(axeX, axeY, axeW, axeH);
 
@@ -484,13 +488,13 @@ void keyPressed() {
   if (key == 'k' || key == 'K') {
     isAttacking = true;
     attackTimer = attackDuration;
-    playerFacingRight = true;
+    attackRight = true;
   }
 
   if (key == 'h' || key == 'H') {
     isAttacking = true;
     attackTimer = attackDuration;
-    playerFacingRight = false;
+    attackRight = false;
   }
 
   
@@ -537,7 +541,7 @@ class Platform {
 class Enemy {
   float x, y, w, h;
   float speed = 2;
-  float detectRange = 200;
+  float detectRange = 270;
   boolean charging = false;
   int chargeCooldown = 0;
   int pauseTimer = 0;
@@ -636,7 +640,7 @@ class Item {
 
 // ゲームリセット
 void resetGame() {
-   if (reachedCheckpoint) {
+ if (reachedCheckpoint) {
     playerX = checkpointX;
     playerY = checkpointY;
   } else {
