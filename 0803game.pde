@@ -101,7 +101,7 @@ checkpointY = height - 100;  // 最初の開始地点
   platforms.add(new Platform(200, height - 120, 80, 20));
   platforms.add(new Platform(400, height - 180, 80, 20));
   platforms.add(new Platform(600, height - 240, 80, 20));
- // platforms.add(new Platform(950, height - 250, 40, 250)); 
+  platforms.add(new Platform(950, height - 250, 40, 250)); 
   platforms.add(new Platform(1650, height - 150, 50, 20));
   platforms.add(new Platform(1760, height - 225, 50, 20));
   platforms.add(new Platform(1870, height - 300, 50, 20));
@@ -213,12 +213,32 @@ if (playerX < -100) {
         playerX + playerW > p.x &&
         playerX < p.x + p.w &&
         playerY + playerH > p.y &&
-        playerY + playerH < p.y + p.h + 10) {
+        playerY + playerH - velocityY <= p.y) {
       playerY = p.y - playerH;
       velocityY = 0;
       knockbackY = 0;
       onGround = true;
     }
+
+    // 壁の横からの衝突を防ぐ
+  if (playerY + playerH > p.y && playerY < p.y + p.h) {
+    // 横から右にぶつかったとき
+    if (velocityX > 0 &&
+        playerX + playerW <= p.x + velocityX &&
+        playerX + playerW > p.x &&
+        playerX < p.x) {
+      playerX = p.x - playerW;
+      velocityX = 0;
+    }
+    // 横から左にぶつかったとき
+    if (velocityX < 0 &&
+        playerX >= p.x + p.w + velocityX &&
+        playerX < p.x + p.w &&
+        playerX + playerW > p.x + p.w) {
+      playerX = p.x + p.w;
+      velocityX = 0;
+    }
+   }
 
     if (velocityY < 0 &&
         playerX + playerW > p.x &&
