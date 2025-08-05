@@ -12,7 +12,7 @@ boolean onGround = false;
 float knockbackX = 0;
 float knockbackY = 0;
 boolean playerFacingRight = true;
-float checkpointX = 2400;
+float checkpointX = 2250;
 float checkpointY;
 PImage tyuukann;
 boolean reachedCheckpoint = false;
@@ -21,8 +21,14 @@ boolean attackRight = true;
 int attackDuration = 10;  // 攻撃の持続時間（フレーム数）
 int attackTimer = 0;
 
+
 // スクロール
 float cameraX = 0;
+// ボスエリア制御用の変数
+boolean inBossArea = false;
+float bossAreaStartX = 2400;
+float bossAreaEndX = 3120;
+float bossCameraX = bossAreaStartX - (width / 2);  // ボスエリアの左端を画面の中心に合わせる
 
 // キー状態管理
 boolean leftPressed = false;
@@ -72,7 +78,7 @@ boolean jumpPressed = false;//スペースキーの状態　足音再生用
 AudioPlayer missattackSound;//空振りしたときの効果音
 boolean attackHit = false;//攻撃が当たったかどうか
 
-float healX = 2400;  // 回復ポイントの位置（X座標）
+float healX = 2250;  // 回復ポイントの位置（X座標）
 float healY = 300; // Y座標（地面の上）
 float healW = 40;
 float healH = 60;
@@ -227,6 +233,22 @@ void draw() {
   }
   // 重力
   velocityY += gravity;
+  if (inBossArea) {
+  cameraX = bossAreaStartX;
+
+  // 左に出られないように制限
+  if (playerX < bossAreaStartX) {
+    playerX = bossAreaStartX;
+    velocityX = max(0, velocityX); // 左向きの速度を止める
+  }
+
+  // 右に出られないように制限
+  if (playerX + playerW > bossAreaEndX) {
+    playerX = bossAreaEndX - playerW;
+    velocityX = min(0, velocityX); // 右向きの速度を止める
+  }
+}
+
 
   // ノックバック加算
   playerX += velocityX + knockbackX;
@@ -425,7 +447,22 @@ if (!reachedCheckpoint &&
 
   // カメラ位置
   cameraX = playerX - width / 2;
+  
+    // ボスエリア制御
+  if (playerX >= bossAreaStartX) {
+    inBossArea = true;
+  }
 
+  if (inBossArea) {
+    // カメラをボスエリアに固定（強制スクロール）
+    cameraX = bossCameraX;
+  } else {
+    // 通常時はプレイヤーを中心に追従
+    cameraX = playerX - width / 2;
+  }
+
+    
+ 
   // 描画
   pushMatrix();
   translate(-cameraX, 0);
@@ -478,7 +515,7 @@ if (!reachedCheckpoint &&
 
   // 敵描画
   enemy.display();
-  
+   
   popMatrix();
 
   // アイテム描画
@@ -541,7 +578,6 @@ if (!reachedCheckpoint &&
       }
     }
 }
-
 // 入力処理
 void keyPressed() {
   if (!gameStarted && keyCode == ENTER) {
