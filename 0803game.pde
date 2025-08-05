@@ -56,9 +56,21 @@ boolean invincible = false;
 int invincibleTimer = 0;
 
 //サウンド
-import ddf.minim.*;
-Minim minim;
-AudioPlayer footSound;
+import ddf.minim.*;//Minimライブラリのインポート、サウンド関連のクラスを使えるようにする
+Minim minim;//Minimのメインオブジェクト、サウンドファイルの読み込みや再生、初期化してから音声をロード
+AudioPlayer jumpSound;//飛んだ時の効果音
+AudioPlayer damageSound;//ダメージを受けたときの効果音
+AudioPlayer enterSound;//Enterキーを押したときの効果音
+AudioPlayer fallingSound;//落下によるゲームオーバーの効果音
+AudioPlayer itemgetSound;//アイテム獲得時の効果音
+AudioPlayer lifeitemgetSound;//ライフアイテム獲得時の効果音
+AudioPlayer bgm;//BGM
+AudioPlayer attackSound;//攻撃時の効果音
+AudioPlayer runSound;//足音の効果音
+boolean isRunSoundPlaying = false;//再生管理フラグ
+boolean jumpPressed = false;//スペースキーの状態　足音再生用
+AudioPlayer missattackSound;//空振りしたときの効果音
+boolean attackHit = false;//攻撃が当たったかどうか
 
 float healX = 2400;  // 回復ポイントの位置（X座標）
 float healY = 300; // Y座標（地面の上）
