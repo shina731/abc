@@ -93,7 +93,7 @@ void setup() {
   playerAttackImageL = loadImage("player_attack_R.png");
   platforms = new ArrayList<Platform>();
   bg=loadImage("haikei.png");
- tyuukann = loadImage("tyuukann.png");
+  tyuukann = loadImage("tyuukann.png");
   itemTexture = loadImage("item.png"); // dataフォルダに item.png を置く（任意）
 
   items = new ArrayList<Item>();
@@ -107,11 +107,10 @@ void setup() {
    for (int i = -10; i < 40; i++) {
      if (i >= 20 && i <= 27) continue; // index 20〜29 = x:1600〜2400 の地面を空ける（穴）
   platforms.add(new Platform(i * 80, height - 40, 80, 40));
-
-    platforms.add(new Platform(i * 80, height - 40, 80, 40));
+  platforms.add(new Platform(i * 80, height - 40, 80, 40));
     
   }
-checkpointY = height - 100;  // 最初の開始地点
+  checkpointY = height - 100;  // 最初の開始地点
 
   // 空中ブロック
   platforms.add(new Platform(200, height - 120, 80, 20));
@@ -132,7 +131,19 @@ checkpointY = height - 100;  // 最初の開始地点
   
   //サウンドsetup
   minim = new Minim(this);
-  footSound = minim.loadFile("ニュッ2.mp3");
+  jumpSound = minim.loadFile("jump.mp3");
+  damageSound = minim.loadFile("damage.wav");
+  enterSound = minim.loadFile("enter.mp3");
+  fallingSound = minim.loadFile("falling.mp3");
+  itemgetSound = minim.loadFile("item.mp3");
+  lifeitemgetSound = minim.loadFile("lifeitem.wav");
+  attackSound = minim.loadFile("attack.mp3");
+  runSound = minim.loadFile("run.mp3");
+  missattackSound = minim.loadFile("missattack.mp3");
+  
+  bgm = minim.loadFile("bgm2.mp3");
+  bgm.loop();
+  bgm.setGain(-15);
 
 startTime = millis();
 }
@@ -211,9 +222,9 @@ void draw() {
   } else {
     velocityX = 0;
   }
-if (playerX < -100) {
-  playerX = -100;
-}
+  if (playerX < -100) {
+    playerX = -100;
+  }
   // 重力
   velocityY += gravity;
 
@@ -230,6 +241,11 @@ if (playerX < -100) {
     life = 0;
     deathAnimationPlaying = true;
     deathAnimationTimer = 10;
+    if(fallingSound != null&&//音声を再生
+      !fallingSound.isPlaying()) {
+      fallingSound.rewind();
+      fallingSound.play();
+    }
   }
  int elapsed = millis() - startTime;
  int remaining = max(0, totalTimeMillis - elapsed);
@@ -302,6 +318,11 @@ if (playerX < -100) {
     life--;
     invincible = true;
     invincibleTimer = 60;
+    if(damageSound != null&&//音声を再生
+      !damageSound.isPlaying()) {
+      damageSound.rewind();
+      damageSound.play();
+    }
 
     // ノックバック（敵の反対方向へ）
     if (playerX + playerW / 2 < enemy.x + enemy.w / 2) {
@@ -336,6 +357,11 @@ if (playerX < -100) {
   life = 3;        // ライフ全回復
   healed = true;   // 一度だけ回復
   println("ライフが全回復した！");
+  if(lifeitemgetSound != null&&//音声を再生
+      !lifeitemgetSound.isPlaying()) {
+      lifeitemgetSound.rewind();
+      lifeitemgetSound.play();
+    }
   }
 
  // 回復ポイントの範囲に入ったらチェックポイント登録
@@ -362,6 +388,11 @@ if (!reachedCheckpoint &&
       items.remove(i);
 
       println("アイテムをゲット！");
+      if(itemgetSound != null&&//音声を再生
+      !itemgetSound.isPlaying()) {
+        itemgetSound.rewind();
+        itemgetSound.play();
+      }
     }
   }
 
@@ -422,11 +453,22 @@ if (!reachedCheckpoint &&
         axeX < enemy.x + enemy.w &&
         axeY + axeH > enemy.y &&
         axeY < enemy.y + enemy.h) {
+      attackHit = true;//攻撃成功
       enemy.charging = false;  // 攻撃キャンセル！
       enemy.chargeCooldown = 60;
       enemy.pauseTimer = 30;
       println("攻撃成功！");
+      if(attackSound != null&&//音声を再生
+          !attackSound.isPlaying()) {
+          attackSound.rewind();
+          attackSound.play();
+        }
     }
+    if (!attackHit && missattackSound != null && !missattackSound.isPlaying()) {
+      missattackSound.rewind();
+      missattackSound.play();
+    }
+    attackHit = false; // リセット
   }
 
   // 足場描画
@@ -472,17 +514,51 @@ if (!reachedCheckpoint &&
       rect(x, y, displaySize, displaySize);
     }
   }
+  //足音
+  if ((leftPressed || rightPressed) && onGround && !keyPressed || (keyPressed && key != ' ')) {
+    if (!isRunSoundPlaying && runSound != null) {
+      runSound.loop();  // ループ再生
+      isRunSoundPlaying = true;
+    }
+  } else {
+    if (isRunSoundPlaying && runSound != null) {
+      runSound.pause(); // 停止ではなく pause にすることでループの頭で止める
+      isRunSoundPlaying = false;
+    }
+  }
+  boolean movingHorizontally = leftPressed || rightPressed;
+  boolean shouldPlayRunSound = movingHorizontally && onGround && !jumpPressed;
+  
+  if (shouldPlayRunSound) {
+    if (!isRunSoundPlaying && runSound != null) {
+      runSound.loop();
+      isRunSoundPlaying = true;
+    }
+  } else {
+    if (isRunSoundPlaying && runSound != null) {
+      runSound.pause();
+      isRunSoundPlaying = false;
+      }
+    }
 }
 
 // 入力処理
 void keyPressed() {
   if (!gameStarted && keyCode == ENTER) {
     gameStarted = true;
+    if (enterSound != null) {
+      enterSound.rewind();
+      enterSound.play();
+    }
     return;
   }
 
   if (gameOver && gameOverTimer <= 0 && keyCode == ENTER) {
     resetGame();
+    if(enterSound != null){
+      enterSound.rewind();
+      enterSound.play();
+    }
     return;
   }
 
@@ -508,15 +584,16 @@ void keyPressed() {
     attackTimer = attackDuration;
     attackRight = false;
   }
-
-  
   
   if (key == ' ') {
-    footSound.rewind();
-    footSound.play();
+    jumpPressed = true;
     if (onGround) {
       velocityY = shiftPressed ? highJumpPower : jumpPower;
       onGround = false;
+      if (jumpSound != null && !jumpSound.isPlaying()) {
+        jumpSound.rewind();
+        jumpSound.play();
+      }
     }
   }
 }
@@ -530,6 +607,9 @@ void keyReleased() {
   }
   if (key == CODED && keyCode == SHIFT) {
     shiftPressed = false;
+  }
+  if(key ==' '){
+    jumpPressed = false;
   }
 }
 
@@ -594,7 +674,6 @@ class Enemy {
       // プレイヤーの方向を向いて突進
       direction = (pxCenter > exCenter) ? 1 : -1;
     }
-
 
     if (charging) {
       chasingTimer++;
@@ -678,4 +757,22 @@ void resetGame() {
   items.add(new Item(1880, height - 350, 30, 30, itemTexture));
   collectedItems.clear();
   startTime = millis();  // ゲームリセット時にも時間をリセット
+}
+
+//サウンド停止
+void stop(){
+  jumpSound.close();
+  damageSound.close();
+  enterSound.close();
+  fallingSound.close();
+  itemgetSound.close();
+  lifeitemgetSound.close();
+  attackSound.close();
+  runSound.close();
+  missattackSound.close();
+  if(bgm != null){
+    bgm.close();
+  }
+  minim.stop();
+  super.stop();
 }
