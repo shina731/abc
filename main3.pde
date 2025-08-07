@@ -27,8 +27,8 @@ ArrayList<Enemy> enemies;
 float cameraX = 0;
 // ボスエリア制御用の変数
 boolean inBossArea = false;
-float bossAreaStartX = 2600;
-float bossAreaEndX = 3420;
+float bossAreaStartX = 4800;
+float bossAreaEndX = 5620;
 float bossCameraX = bossAreaStartX - (width / 2);  // ボスエリアの左端を画面の中心に合わせる
 
 // キー状態管理
@@ -78,6 +78,10 @@ boolean isRunSoundPlaying = false;//再生管理フラグ
 boolean jumpPressed = false;//スペースキーの状態　足音再生用
 AudioPlayer missattackSound;//空振りしたときの効果音
 boolean attackHit = false;//攻撃が当たったかどうか
+AudioPlayer gameoverSound;//ゲームオーバーした際の効果音
+boolean gameOverSoundPlayed = false;//ゲームオーバーサウンドが再生済みか
+AudioPlayer bossbattleBGM;//ボス戦でのBGM
+boolean bossBGMPlaying = false;
 
 float healX = 2250;  // 回復ポイントの位置（X座標）
 float healY = 300; // Y座標（地面の上）
@@ -109,9 +113,10 @@ void setup() {
   // 空中にアイテムを設置
   items.add(new Item(630, height - 270, 30, 30, itemTexture));
   items.add(new Item(1880, height - 350, 30, 30, itemTexture));
+  items.add(new Item(4700, height - 400, 30, 30, itemTexture));
 
   // 地面
-  for (int i = -10; i < 46; i++) {
+  for (int i = -10; i < 70; i++) {
     if (i >= 20 && i <= 27) continue; // index 20〜29 = x:1600〜2400 の地面を空ける（穴）
     platforms.add(new Platform(i * 80, height - 40, 80, 40));
   }
@@ -127,13 +132,18 @@ void setup() {
   platforms.add(new Platform(1870, height - 300, 50, 20));
   platforms.add(new Platform(1980, height - 225, 50, 20));
   platforms.add(new Platform(2090, height - 150, 50, 20));
-  
-  
+  platforms.add(new Platform(3000, height - 125,30, 20));
+  platforms.add(new Platform(3100, height - 125,30, 20));
+  platforms.add(new Platform(3200, height - 125,30, 20));
+  platforms.add(new Platform(3300, height - 125,30, 20));
+  platforms.add(new Platform(3400, height - 125,30, 20));
+  platforms.add(new Platform(4000, height - 120, 100, 20));
+  platforms.add(new Platform(4250, height - 180, 100, 20));
+  platforms.add(new Platform(4500, height - 240, 100, 20));
   
   enemies = new ArrayList<Enemy>(); // ★ enemiesリストを初期化
   // setup()などで敵追加
-enemies.add(new Enemy(1500, height - 100, 40, 60,enemyTexture));
-
+  enemies.add(new Enemy(1500, height - 100, 40, 60,enemyTexture));
 
   //日本語対応_字体「メイリオ」
   PFont font = createFont("Meiryo", 50);
@@ -141,17 +151,17 @@ enemies.add(new Enemy(1500, height - 100, 40, 60,enemyTexture));
 
   //サウンドsetup
   minim = new Minim(this);
-  jumpSound = minim.loadFile("jump.mp3");
+  jumpSound = minim.loadFile("jump.wav");
   damageSound = minim.loadFile("damage.wav");
-  enterSound = minim.loadFile("enter.mp3");
-  fallingSound = minim.loadFile("falling.mp3");
-  itemgetSound = minim.loadFile("item.mp3");
+  enterSound = minim.loadFile("enter.wav");
+  fallingSound = minim.loadFile("falling.wav");
+  itemgetSound = minim.loadFile("item.wav");
   lifeitemgetSound = minim.loadFile("lifeitem.wav");
-  attackSound = minim.loadFile("attack.mp3");
-  runSound = minim.loadFile("run.mp3");
-  missattackSound = minim.loadFile("missattack.mp3");
+  attackSound = minim.loadFile("attack.wav");
+  runSound = minim.loadFile("run.wav");
+  missattackSound = minim.loadFile("missattack.wav");
 
-  bgm = minim.loadFile("bgm2.mp3");
+  bgm = minim.loadFile("bgm2.wav");
   bgm.loop();
   bgm.setGain(-15);
 
@@ -191,7 +201,6 @@ void draw() {
     image(bg, 0, 0, width, height);
   }
 
-
   // スタート画面
   if (!gameStarted) {
     fill(255);
@@ -214,6 +223,11 @@ void draw() {
   }
 
   if (gameOver) {
+    if (gameOver && !gameOverSoundPlayed) {
+      gameoverSound.rewind(); // 最初から再生
+      gameoverSound.play();
+      gameOverSoundPlayed = true;
+    }
     if (gameOverTimer > 0) {
       gameOverTimer--;
     } else {
@@ -258,7 +272,6 @@ void draw() {
     }
   }
 
-
   // ノックバック加算
   playerX += velocityX + knockbackX;
   playerY += velocityY + knockbackY;
@@ -272,11 +285,11 @@ void draw() {
     life = 0;
     deathAnimationPlaying = true;
     deathAnimationTimer = 10;
-    if (fallingSound != null&&//音声を再生
+    /*if (fallingSound != null&&//音声を再生
       !fallingSound.isPlaying()) {
       fallingSound.rewind();
       fallingSound.play();
-    }
+    }*/
   }
   int elapsed = millis() - startTime;
   int remaining = max(0, totalTimeMillis - elapsed);
@@ -371,7 +384,6 @@ void draw() {
   }
 }
 
-
   // 無敵時間カウント
   if (invincible) {
     invincibleTimer--;
@@ -459,7 +471,6 @@ void draw() {
   }
 }
 
-
   // カメラ位置
   cameraX = playerX - width / 2;
 
@@ -471,12 +482,21 @@ void draw() {
   if (inBossArea) {
     // カメラをボスエリアに固定（強制スクロール）
     cameraX = bossCameraX;
+    if (inBossArea && !bossBGMPlaying) {
+      if (bgm != null && bgm.isPlaying()) {
+        bgm.pause(); // 通常BGMを止める（pause or close)
+      }
+      if (bossbattleBGM != null) {
+        bossbattleBGM.rewind(); // 先頭から再生
+        bossbattleBGM.loop();   // ループさせたい場合
+        bossbattleBGM.setGain(-15);
+      }
+      bossBGMPlaying = true;
+    }
   } else {
     // 通常時はプレイヤーを中心に追従
     cameraX = playerX - width / 2;
   }
-
-
 
   // 描画
   pushMatrix();
@@ -538,7 +558,6 @@ void draw() {
   attackHit = false;
 }
 
-
   // 足場描画
   for (Platform p : platforms) {
     p.display();
@@ -550,8 +569,6 @@ for (Enemy e : enemies) {
   e.update();
 }
 
-
-
   // アイテム描画
   for (Item item : items) {
     item.display();
@@ -559,7 +576,7 @@ for (Enemy e : enemies) {
 
   // 回復ポイント描画
   image(tyuukann, checkpointX, checkpointY, 40, 40);
-popMatrix();
+  popMatrix();
   // ライフ表示
   fill(0);
   textSize(20);
@@ -896,18 +913,19 @@ class Enemy {
 
   //サウンド停止
   void stop() {
+    if (bgm != null) {
+      bgm.close();
+    }
     jumpSound.close();
     damageSound.close();
     enterSound.close();
-    fallingSound.close();
+    //fallingSound.close();
     itemgetSound.close();
     lifeitemgetSound.close();
     attackSound.close();
     runSound.close();
     missattackSound.close();
-    if (bgm != null) {
-      bgm.close();
-    }
+    gameoverSound.close();
     minim.stop();
     super.stop();
   }
