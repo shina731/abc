@@ -1,3 +1,12 @@
+boolean gameStarted = false; // ← ゲームが開始されたかどうか
+boolean countdownStarted = false;   // カウントダウンが始まったか
+int countdownStartTime = 0;         // カウントダウン開始時刻（ミリ秒）
+int countdownDuration = 4000;       // カウントダウン全体（約4秒）
+boolean played3 = false;
+boolean played2 = false;
+boolean played1 = false;
+boolean playedGo = false;
+
 // プレイヤー変数
 float playerX = -90;
 float playerY = 0;
@@ -21,7 +30,7 @@ boolean attackRight = true;
 int attackDuration = 10;  // 攻撃の持続時間（フレーム数）
 int attackTimer = 0;
 ArrayList<Enemy> enemies;
-
+int bossTouchCooldown = 0;  // ボス接触後に移動禁止にする時間（フレーム数）
 
 // スクロール
 float cameraX = 0;
@@ -30,6 +39,11 @@ boolean inBossArea = false;
 float bossAreaStartX = 4800;
 float bossAreaEndX = 5620;
 float bossCameraX = bossAreaStartX - (width / 2);  // ボスエリアの左端を画面の中心に合わせる
+int bossPhase = 0;
+int bossPhaseTimer = 0;
+float bossX = bossAreaEndX + 200;
+float bossTargetX = bossAreaEndX - 100;
+int bossHP = 100;
 
 // キー状態管理
 boolean leftPressed = false;
@@ -37,7 +51,7 @@ boolean rightPressed = false;
 boolean shiftPressed = false;
 
 // ゲーム状態
-boolean gameStarted = false;
+
 boolean gameOver = false;
 int gameOverTimer = 0;
 int totalTimeMillis = 5 * 60 * 1000;  // 5分（ミリ秒）
@@ -94,7 +108,7 @@ ArrayList<Item> items;             // ゲーム上にあるアイテム
 ArrayList<Item> collectedItems;    // ゲットしたアイテム
 PImage itemTexture;                // アイテム画像（任意）
 
-void setup() {
+void initGame() {
   size(800, 400);
   playerY = height - 100;
 
@@ -166,7 +180,6 @@ enemies.add(new Enemy(1400, height - 100, 40, 60,enemyTexture));
   gameoverSound = minim.loadFile("gameover.mp3");
   bossbattleBGM = minim.loadFile("bossbattle.mp3");//ボス戦でのBGM
   bgm = minim.loadFile("bgm2.mp3");
-  bgm.loop();
   bgm.setGain(-15);
 
   startTime = millis();
@@ -198,7 +211,7 @@ void drawPlayer() {
   popMatrix();
 }
 
-void draw() {
+void drawGame() {
   background(0); // 空色
   noStroke();
   if (bg != null) {
@@ -211,7 +224,7 @@ void draw() {
     fill(255);
     textAlign(CENTER, CENTER);
     textSize(48);
-    text("マリオ風ゲーム", width / 2, height / 2 - 40);
+    text("稲と鍬の伝説", width / 2, height / 2 - 40);
     textSize(24);
     text("Enterキーでスタート", width / 2, height / 2 + 20);
     return;
@@ -583,28 +596,76 @@ if (currentHP <= 0) {
   cameraX = playerX - width / 2;
 
   // ボスエリア制御
-  if (playerX >= bossAreaStartX) {
-    inBossArea = true;
+  // ボスエリア突入チェック
+if (playerX >= bossAreaStartX && bossPhase == 0) {
+  inBossArea = true;
+  bossPhase = 1;
+  bossPhaseTimer = 0;  // フェーズ1開始
+}
+
+// ボスエリア制御
+if (inBossArea) {
+  cameraX = bossCameraX;
+
+  // BGM切替（初回のみ）
+  if (!bossBGMPlaying) {
+    if (bgm != null && bgm.isPlaying()) {
+      bgm.pause();
+    }
+    if (bossbattleBGM != null) {
+      bossbattleBGM.rewind();
+      bossbattleBGM.loop();
+      bossbattleBGM.setGain(-15);
+    }
+    bossBGMPlaying = true;
   }
 
-  if (inBossArea) {
-    // カメラをボスエリアに固定（強制スクロール）
-    cameraX = bossCameraX;
-     if (inBossArea && !bossBGMPlaying) {
-      if (bgm != null && bgm.isPlaying()) {
-        bgm.pause(); // 通常BGMを止める（pause or close)
-      }
-      if (bossbattleBGM != null) {
-        bossbattleBGM.rewind(); // 先頭から再生
-        bossbattleBGM.loop();   // ループさせたい場合
-        bossbattleBGM.setGain(-15);
-      }
-      bossBGMPlaying = true;
+  // ▼▼▼ ボスフェーズ制御 ▼▼▼
+  bossPhaseTimer++;
+
+  if (bossPhase == 1) {
+    // 演出「WARNING!!」
+    if (bossPhaseTimer <= 180) {
+      textSize(64);
+      fill(255, 0, 0);
+      textAlign(CENTER, CENTER);
+      text("WARNING!!", width / 2, height / 2);
+    } else {
+      bossPhase = 2;
+      bossPhaseTimer = 0;
     }
-  } else {
-    // 通常時はプレイヤーを中心に追従
-    cameraX = playerX - width / 2;
+  } else if (bossPhase == 2) {
+    // ボス登場演出（スライドインなど）
+    bossX -= 2;
+    if (bossX <= bossTargetX) {
+      bossX = bossTargetX;
+      bossPhase = 3;
+      bossPhaseTimer = 0;
+    }
+  } else if (bossPhase == 3) {
+    // ボスと戦闘中
+    if (bossHP > 0) {
+      // ボス攻撃や移動処理などを書く
+    } else {
+      bossPhase = 4;
+      bossPhaseTimer = 0;
+    }
+  } else if (bossPhase == 4) {
+    // ボス撃破演出
+    if (bossPhaseTimer < 60) {
+      // 爆発など
+    } else {
+      // リセットや次のステージへ
+      bossPhase = 5; // 完了状態
+      // 画面暗転など演出もここで可能
+    }
   }
+
+} else {
+  // 通常プレイ中はプレイヤー中心
+  cameraX = playerX - width / 2;
+}
+
 
 
 
@@ -760,7 +821,7 @@ rect(barX, barY, barWidth * hpRatio, barHeight);
   }
 }
 // 入力処理
-void keyPressed() {
+void handleGameKey() {
   if (!gameStarted && keyCode == ENTER) {
     gameStarted = true;
     if (enterSound != null) {
@@ -815,7 +876,7 @@ void keyPressed() {
   }
 }
 
-void keyReleased() {
+void handleGameKeyReleased() {
   if (key == 'a' || key == 'A') {
     leftPressed = false;
   }
