@@ -160,6 +160,8 @@ void setup() {
   attackSound = minim.loadFile("attack.wav");
   runSound = minim.loadFile("run.wav");
   missattackSound = minim.loadFile("missattack.wav");
+  gameoverSound = minim.loadFile("gameover.wav");
+  bossbattleBGM = minim.loadFile("bossbattle.wav");//ボス戦でのBGM
 
   bgm = minim.loadFile("bgm2.wav");
   bgm.loop();
