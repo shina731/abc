@@ -16,7 +16,7 @@ float velocityX = 0;
 float velocityY = 0;
 float gravity = 0.8;
 float jumpPower = -15;
-float highJumpPower = -19;
+float highJumpPower = -20;
 boolean onGround = false;
 boolean playerFacingRight = true;
 int playerHP = 100;        // 初期HP
@@ -90,6 +90,7 @@ int lightningDuration = 20; // フレーム数で表示時間
 int lightningTimer = 0;
 int lightningWarningLeadTime = 1000; // 2秒前に警告音
 boolean lightningWarningPlayed = false;
+boolean isChargingLightning = false;
 
 
 // プレイヤーとボスの当たり判定（矩形判定）
@@ -489,73 +490,107 @@ void updateBossAttack() {
   if (bossDefeated) return;
   
   // ミサイル攻撃処理 
-  missileCooldown--;
-  if (missileCooldown <= 0) {
-    float startX = bossX + bossW / 2;
-    float startY = bossY + bossH / 3;
-    // プレイヤー座標
-    float targetX = playerX + playerW / 2;
-    float targetY = playerY + playerH / 2;
+  if (!isChargingLightning) {
+    missileCooldown--;
+    if (missileCooldown <= 0) {
+      float startX = bossX + bossW / 2;
+      float startY = bossY + bossH / 3;
+      // プレイヤー座標
+      float targetX = playerX + playerW / 2;
+      float targetY = playerY + playerH / 2;
 
-    // 目標方向ベクトル
-    float dx = targetX - startX;
-    float dy = targetY - startY;
-     // ベクトルの長さを求める
-    float dist = sqrt(dx*dx + dy*dy);
-    // 速度の大きさ（ミサイルの速さ）
-    float speed = 6;
-    // 単位ベクトルにして速度ベクトルを計算
-    float speedX = speed * dx / dist;
-    float speedY = speed * dy / dist;
+      // 目標方向ベクトル
+      float dx = targetX - startX;
+      float dy = targetY - startY;
+       // ベクトルの長さを求める
+      float dist = sqrt(dx*dx + dy*dy);
+      // --- HPに応じた速度とクールダウン設定 ---
+    float speed;
+    int cooldownMin, cooldownMax;
 
-    // ミサイル追加
-    bossMissiles.add(new Missile(startX, startY, speedX, speedY));
-    missileCooldown = int(random(40, 100)); // 次の発射までの間隔
-  }
-  
-  // 雷の警告音を鳴らす（雷の2秒前）
-if (!lightningWarningPlayed && millis() - lastLightningTime > lightningInterval - lightningWarningLeadTime) {
-  if (lightningWarningSound != null) {
-    lightningWarningSound.rewind();
-    lightningWarningSound.play();
-    println("雷の警告音！");
-  }
-  lightningWarningPlayed = true;
-}
-  // 実際に雷が発生
-  if (millis() - lastLightningTime > lightningInterval) {
-    //警告音を止める
-  if (lightningWarningSound != null && lightningWarningSound.isPlaying()) {
-    lightningWarningSound.pause();
-    println("警告音を停止");
-  }
-  
-  if (lightningSound != null) {
-    lightningSound.rewind();  // 毎回最初から
-    lightningSound.play();    // 再生
-    println("雷の音再生！");
-  }
-
-    lastLightningTime = millis();
-    showLightning = true;
-    lightningTimer = lightningDuration;
-    isLightningActive = true;  // 雷フラグON
-    lightningWarningPlayed = false; // 次回のためにリセット
-
-    // 雷をプレイヤーの中心±10の範囲に落とす
-    lightningX = int(playerX + playerW / 2 + random(-10, 10));
-
-    // 当たり判定（プレイヤーに当たったか）
-    if (lightningX >= playerX && lightningX <= playerX + playerW) {
-      playerHP -= 15;
-      playerHP = max(playerHP, 0);  // マイナス防止
-      println("プレイヤーに15ダメージ！（雷）残りHP: " + playerHP);
-
-      if (playerHP <= 0) {
-        isGameOver = true;
-      }
+    if (bossHP > 70) {
+      speed = 2;
+      cooldownMin = 80;
+      cooldownMax = 120;
+    } else if (bossHP > 40) {
+      speed = 4;
+      cooldownMin = 60;
+      cooldownMax = 100;
+    } else if (bossHP > 20) {
+      speed = 6;
+      cooldownMin = 40;
+      cooldownMax = 80;
+    } else {
+      speed = 8;
+      cooldownMin = 20;
+      cooldownMax = 50;
     }
+      // 単位ベクトルにして速度ベクトルを計算
+      float speedX = speed * dx / dist;
+      float speedY = speed * dy / dist;
+
+      // ミサイル追加
+      bossMissiles.add(new Missile(startX, startY, speedX, speedY));
+      missileCooldown = int(random(40, 100)); // 次の発射までの間隔
+    
+      // 次の発射までの間隔を設定
+    missileCooldown = int(random(cooldownMin, cooldownMax));
+    }
+  
+// 60以下になったら雷開始
+   if (bossHP <= 60) {
+
+     // 雷の警告音を鳴らす（雷の2秒前）
+     if (!lightningWarningPlayed && millis() - lastLightningTime > lightningInterval - lightningWarningLeadTime) {
+       if (lightningWarningSound != null) {
+         lightningWarningSound.rewind();
+         lightningWarningSound.play();
+         println("雷の警告音！");
+       }
+       lightningWarningPlayed = true;
+       isChargingLightning = true;  // ← チャージ中フラグON
+     }
+
+     // 実際に雷が発生
+     if (millis() - lastLightningTime > lightningInterval) {
+
+       // 警告音を止める
+       if (lightningWarningSound != null && lightningWarningSound.isPlaying()) {
+         lightningWarningSound.pause();
+         println("警告音を停止");
+       }
+
+       if (lightningSound != null) {
+         lightningSound.rewind();
+         lightningSound.play();
+         println("雷の音再生！");
+       }
+
+       lastLightningTime = millis();
+       showLightning = true;
+       lightningTimer = lightningDuration;
+       isLightningActive = true;
+       lightningWarningPlayed = false;
+       isChargingLightning = false;  // ← チャージ完了、通常に戻す
+
+       // 雷をプレイヤーの中心±3の範囲に落とす
+       lightningX = int(playerX + playerW / 2 + random(-3, 3));
+
+       // 当たり判定
+       if (lightningX >= playerX && lightningX <= playerX + playerW) {
+         playerHP -= 15;
+         playerHP = max(playerHP, 0);
+         println("プレイヤーに15ダメージ！（雷）残りHP: " + playerHP);
+
+         if (playerHP <= 0) {
+           isGameOver = true;
+         }
+       }
+     }
+
+     } // ← bossHP <= 60 の条件終了
   }
+
 
   // ミサイルの移動と描画
   for (int i = bossMissiles.size() - 1; i >= 0; i--) {
@@ -705,15 +740,26 @@ boolean checkBossHit() {
 // ボスにダメージを与える
 void applyDamageToBoss() {
   int damage = 0;
-  if (itemCount >= 3) {
-    damage = 30;
-  } else if (itemCount == 2) {
-    damage = 15;
-  } else if (itemCount == 1) {
+  switch (itemCount) {
+  case 5:
+    damage = 12;
+    break;
+  case 4:
     damage = 10;
-  } else {
-    damage = 5;
-  }
+    break;
+  case 3:
+    damage = 8;
+    break;
+  case 2:
+    damage = 6;
+    break;
+  case 1:
+    damage = 4;
+    break;
+  default:
+    damage = 2;
+    break;
+}
 
   if (attackSound != null) {
     attackSound.rewind();  // 毎回先頭から再生するため
