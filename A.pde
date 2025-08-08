@@ -159,7 +159,12 @@ void initGame() {
   
   enemies = new ArrayList<Enemy>(); // ★ enemiesリストを初期化
   // setup()などで敵追加
-enemies.add(new Enemy(1400, height - 100, 40, 60,enemyTexture));
+  enemies.add(new Enemy(1400, height - 100, 40, 60,enemyTexture));
+  enemies.add(new Enemy(3000, height - 205, 40, 60, enemyTexture));
+  enemies.add(new Enemy(3100, height - 205, 40, 60, enemyTexture));
+  enemies.add(new Enemy(3200, height - 205, 40, 60, enemyTexture));
+  enemies.add(new Enemy(3300, height - 205, 40, 60, enemyTexture));
+  enemies.add(new Enemy(3400, height - 205, 40, 60, enemyTexture));
 
 
   //日本語対応_字体「メイリオ」
@@ -241,6 +246,11 @@ onGround = false;
   }
 
   if (gameOver) {
+    if (gameOver && !gameOverSoundPlayed) {
+      gameoverSound.rewind(); // 最初から再生
+      gameoverSound.play();
+      gameOverSoundPlayed = true;
+    }
     if (gameOverTimer > 0) {
       gameOverTimer--;
     } else {
@@ -945,6 +955,23 @@ class Enemy {
   void update() {
     if (isDead) return;
 
+    // 重なり回避のための処理（敵同士のチェック）
+    for (Enemy other : enemies) {
+      if (other != this && !other.isDead) {
+        float distX = abs((x + w/2) - (other.x + other.w/2));
+        float distY = abs((y + h/2) - (other.y + other.h/2));
+        // 横方向が近すぎて、ほぼ同じ高さなら押し合わないようにする
+        if (distX < this.w && distY < this.h * 0.5) {
+          if (x < other.x) {
+            x -= 1; // 左に少し離れる
+          } else {
+            x += 1; // 右に少し離れる
+          }
+          return; // 他の処理はスキップして離れるだけ
+        }
+      }
+    }
+
     if (isInvincible) {
       invincibleTimer--;
       if (invincibleTimer <= 0) {
@@ -986,9 +1013,9 @@ class Enemy {
     float exCenter = x + w / 2;
 
     boolean playerInRange = abs(pxCenter - exCenter) < detectRange;
-    boolean sameHeight = abs(playerY - y) < 40;
+    //boolean sameHeight = abs(playerY - y) < 40;
 
-    if (!charging && playerInRange && sameHeight) {
+    if (!charging && playerInRange /*&& sameHeight*/) {
       charging = true;
       chasingTimer = 0;
       direction = (pxCenter > exCenter) ? 1 : -1;
@@ -1128,8 +1155,13 @@ if (collidesWith(playerX, playerY, playerW, playerH)) {
     gameOverTimer = 0;
     deathAnimationPlaying = false;
     deathAnimationTimer = 0;
-   enemies.clear();
-  enemies.add(new Enemy(1500, height - 100, 40, 60, enemyTexture));
+    enemies.clear();
+    enemies.add(new Enemy(1500, height - 100, 40, 60, enemyTexture));
+    enemies.add(new Enemy(3000, height - 205, 40, 60, enemyTexture));
+    enemies.add(new Enemy(3100, height - 205, 40, 60, enemyTexture));
+    enemies.add(new Enemy(3200, height - 205, 40, 60, enemyTexture));
+    enemies.add(new Enemy(3300, height - 205, 40, 60, enemyTexture));
+    enemies.add(new Enemy(3400, height - 205, 40, 60, enemyTexture));
     healed = false; // 回復状態を初期化
     items.clear();
     items.add(new Item(630, height - 270, 30, 30, itemTexture));
