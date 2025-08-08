@@ -6,6 +6,7 @@ AudioPlayer game1Music;
 
   void setup() {
   size(800, 400);
+　frameRate(60);
   textAlign(CENTER, CENTER);
   textSize(28);
 
@@ -64,3 +65,4 @@ void keyReleased() {
     handleGameKeyReleased();
   }
 }
+
