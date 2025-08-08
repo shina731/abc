@@ -64,7 +64,9 @@ ArrayList<Platform> platforms;
 
 Enemy enemy;
 PImage enemyTexture;  // 敵画像をグローバルで保持
-
+PImage enemyTexture1;
+PImage enemyTexture2;
+PImage enemyTexture3;
 
 PImage playerTexture;
 PImage playerAttackImageR;
@@ -112,15 +114,19 @@ PGraphics bgLayer;
 
 void initGame() {
   size(800, 400);
-bg = loadImage("haikei.jpg");
+    bg = loadImage("haikei.jpg");
   bgLayer = createGraphics(width, height);
   bgLayer.beginDraw();
   bgLayer.image(bg, 0, 0, width, height);
   bgLayer.endDraw();
+
   playerY = height - 100;
 
   // 敵画像読み込み（dataフォルダに enemy.png を置く）
   enemyTexture = loadImage("enemy.png");
+  enemyTexture1 = loadImage("enemy1.png");
+  enemyTexture2 = loadImage("enemy2.png");
+  enemyTexture3 = loadImage("enemy3.png");
   playerTexture = loadImage("player.png");
   playerAttackImageR = loadImage("player_attack_R.png");
   playerAttackImageL = loadImage("player_attack_R.png");
@@ -136,10 +142,25 @@ bg = loadImage("haikei.jpg");
   items.add(new Item(1880, height - 350, 30, 30, itemTexture));
   items.add(new Item(4700, height - 400, 30, 30, itemTexture));
   // 地面
-  for (int i = -10; i < 70; i++) {
-    if (i >= 20 && i <= 27) continue; // index 20〜29 = x:1600〜2400 の地面を空ける（穴）
-    platforms.add(new Platform(i * 80, height - 40, 80, 40));
+  int[][] holeRanges = {
+  {20, 27}, // 穴①（例：x = 1600〜2160）
+  {31, 36}, // 穴②（例：x = 2800〜2960）
+  {50, 52}  // 穴③（例：x = 4000〜4160）
+};
+
+for (int i = -10; i < 70; i++) {
+  boolean skip = false;
+  for (int[] range : holeRanges) {
+    if (i >= range[0] && i <= range[1]) {
+      skip = true;
+      break;
+    }
   }
+  if (skip) continue;
+
+  platforms.add(new Platform(i * 80, height - 40, 80, 40));
+}
+
   checkpointY = height - 100;  // 最初の開始地点
 
   // 空中ブロック
@@ -147,16 +168,16 @@ bg = loadImage("haikei.jpg");
   platforms.add(new Platform(400, height - 180, 80, 20));
   platforms.add(new Platform(600, height - 240, 80, 20));
   platforms.add(new Platform(950, height - 250, 40, 250));
-  platforms.add(new Platform(1650, height - 150, 50, 20));
-  platforms.add(new Platform(1760, height - 225, 50, 20));
-  platforms.add(new Platform(1870, height - 300, 50, 20));
-  platforms.add(new Platform(1980, height - 225, 50, 20));
-  platforms.add(new Platform(2090, height - 150, 50, 20));
-  platforms.add(new Platform(3000, height - 125,30, 20));
-  platforms.add(new Platform(3100, height - 125,30, 20));
-  platforms.add(new Platform(3200, height - 125,30, 20));
-  platforms.add(new Platform(3300, height - 125,30, 20));
+  platforms.add(new Platform(1650, height - 150, 30, 20));
+  platforms.add(new Platform(1760, height - 225, 30, 20));
+  platforms.add(new Platform(1870, height - 300, 30, 20));
+  platforms.add(new Platform(1980, height - 225, 30, 20));
+  platforms.add(new Platform(2090, height - 150, 30, 20));
+   platforms.add(new Platform(2650, height - 150, 30, 20));
   platforms.add(new Platform(3400, height - 125,30, 20));
+ 
+  platforms.add(new Platform(3600, height - 125,30, 20));
+  
   platforms.add(new Platform(4000, height - 120, 100, 20));
   platforms.add(new Platform(4250, height - 180, 100, 20));
   platforms.add(new Platform(4500, height - 240, 100, 20));
@@ -165,13 +186,12 @@ bg = loadImage("haikei.jpg");
   
   enemies = new ArrayList<Enemy>(); // ★ enemiesリストを初期化
   // setup()などで敵追加
-  enemies.add(new Enemy(1400, height - 100, 40, 60,enemyTexture));
-  enemies.add(new Enemy(3000, height - 205, 40, 60, enemyTexture));
-  enemies.add(new Enemy(3100, height - 205, 40, 60, enemyTexture));
-  enemies.add(new Enemy(3200, height - 205, 40, 60, enemyTexture));
-  enemies.add(new Enemy(3300, height - 205, 40, 60, enemyTexture));
-  enemies.add(new Enemy(3400, height - 205, 40, 60, enemyTexture));
-
+enemies.add(new Enemy(1400, height - 100, 40, 60,enemyTexture));
+enemies.add(new Enemy(3300, height - 205, 40, 60, enemyTexture1));
+  enemies.add(new Enemy(3400, height - 205, 40, 60, enemyTexture2));
+  enemies.add(new Enemy(3500, height - 205, 40, 60, enemyTexture3));
+  enemies.add(new Enemy(3600, height - 205, 40, 60, enemyTexture));
+  enemies.add(new Enemy(3700, height - 205, 40, 60, enemyTexture));
 
   //日本語対応_字体「メイリオ」
   PFont font = createFont("Meiryo", 50);
@@ -223,10 +243,10 @@ void drawPlayer() {
 }
 
 void drawGame() {
-  background(0); // 空色
+  println(frameRate);
   noStroke();
   if (bg != null) {
-    image(bg, 0, 0, width, height);
+    image(bgLayer, 0, 0);
   }
 
 
@@ -252,7 +272,7 @@ onGround = false;
   }
 
   if (gameOver) {
-    if (gameOver && !gameOverSoundPlayed) {
+     if (gameOver && !gameOverSoundPlayed) {
       gameoverSound.rewind(); // 最初から再生
       gameoverSound.play();
       gameOverSoundPlayed = true;
@@ -960,8 +980,7 @@ class Enemy {
 
   void update() {
     if (isDead) return;
-
-    // 重なり回避のための処理（敵同士のチェック）
+ // 重なり回避のための処理（敵同士のチェック）
     for (Enemy other : enemies) {
       if (other != this && !other.isDead) {
         float distX = abs((x + w/2) - (other.x + other.w/2));
@@ -977,7 +996,6 @@ class Enemy {
         }
       }
     }
-
     if (isInvincible) {
       invincibleTimer--;
       if (invincibleTimer <= 0) {
@@ -1019,9 +1037,9 @@ class Enemy {
     float exCenter = x + w / 2;
 
     boolean playerInRange = abs(pxCenter - exCenter) < detectRange;
-    //boolean sameHeight = abs(playerY - y) < 40;
+   // boolean sameHeight = abs(playerY - y) < 40;
 
-    if (!charging && playerInRange /*&& sameHeight*/) {
+    if (!charging && playerInRange/*&& sameHeight*/) {
       charging = true;
       chasingTimer = 0;
       direction = (pxCenter > exCenter) ? 1 : -1;
@@ -1161,13 +1179,13 @@ if (collidesWith(playerX, playerY, playerW, playerH)) {
     gameOverTimer = 0;
     deathAnimationPlaying = false;
     deathAnimationTimer = 0;
-    enemies.clear();
-    enemies.add(new Enemy(1500, height - 100, 40, 60, enemyTexture));
-    enemies.add(new Enemy(3000, height - 205, 40, 60, enemyTexture));
-    enemies.add(new Enemy(3100, height - 205, 40, 60, enemyTexture));
-    enemies.add(new Enemy(3200, height - 205, 40, 60, enemyTexture));
-    enemies.add(new Enemy(3300, height - 205, 40, 60, enemyTexture));
-    enemies.add(new Enemy(3400, height - 205, 40, 60, enemyTexture));
+   enemies.clear();
+    enemies.add(new Enemy(1400, height - 100, 40, 60,enemyTexture));
+enemies.add(new Enemy(3300, height - 205, 40, 60, enemyTexture1));
+  enemies.add(new Enemy(3400, height - 205, 40, 60, enemyTexture2));
+  enemies.add(new Enemy(3500, height - 205, 40, 60, enemyTexture3));
+  enemies.add(new Enemy(3600, height - 205, 40, 60, enemyTexture));
+  enemies.add(new Enemy(3700, height - 205, 40, 60, enemyTexture));
     healed = false; // 回復状態を初期化
     items.clear();
     items.add(new Item(630, height - 270, 30, 30, itemTexture));
@@ -1195,4 +1213,3 @@ if (collidesWith(playerX, playerY, playerW, playerH)) {
     minim.stop();
     super.stop();
   }
-
