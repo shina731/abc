@@ -15,8 +15,7 @@ float playerH = 60;
 float velocityX = 0;
 float velocityY = 0;
 float gravity = 0.8;
-float jumpPower = -15;
-float highJumpPower = -19;
+float jumpPower = -14;
 boolean onGround = false;
 float knockbackX = 0;
 float knockbackY = 0;
@@ -427,6 +426,9 @@ if (!collidedKnockY) {
   playerY = nextKnockY;
 }
 
+if (onGround) {
+  jumpCount = 0;  // 地面に着いたらジャンプ回数をリセット
+}
 
 
   // ノックバック減衰
@@ -856,6 +858,8 @@ rect(barX, barY, barWidth * hpRatio, barHeight);
     }
   }
 }
+int jumpCount = 0;
+int maxJumpCount = 2;  // 2段ジャンプまで許可
 // 入力処理
 void handleGameKey() {
   if (!gameStarted && keyCode == ENTER) {
@@ -887,28 +891,23 @@ void handleGameKey() {
   if (key == CODED && keyCode == SHIFT) {
     shiftPressed = true;
   }
-  if (key == 'k' || key == 'K') {
+  if (key == 'w' || key == 'W') {
     isAttacking = true;
     attackTimer = attackDuration;
-    attackRight = true;
-  }
-
-  if (key == 'h' || key == 'H') {
-    isAttacking = true;
-    attackTimer = attackDuration;
-    attackRight = false;
+    attackRight = playerFacingRight;  // 向いている方向に攻撃
   }
 
   if (key == ' ') {
-    jumpPressed = true;
-    if (onGround) {
-      velocityY = shiftPressed ? highJumpPower : jumpPower;
+    if (jumpCount < maxJumpCount) {
+      velocityY = jumpPower;
       onGround = false;
+      jumpCount++;
       if (jumpSound != null && !jumpSound.isPlaying()) {
         jumpSound.rewind();
         jumpSound.play();
       }
     }
+    jumpPressed = true;
   }
 }
 
@@ -919,10 +918,7 @@ void handleGameKeyReleased() {
   if (key == 'd' || key == 'D') {
     rightPressed = false;
   }
-  if (key == CODED && keyCode == SHIFT) {
-    shiftPressed = false;
-  }
-  if (key ==' ') {
+ if (key == ' ') {
     jumpPressed = false;
   }
 }
