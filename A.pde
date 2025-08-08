@@ -108,8 +108,15 @@ ArrayList<Item> items;             // ゲーム上にあるアイテム
 ArrayList<Item> collectedItems;    // ゲットしたアイテム
 PImage itemTexture;                // アイテム画像（任意）
 
+PGraphics bgLayer;
+
 void initGame() {
   size(800, 400);
+bg = loadImage("haikei.jpg");
+  bgLayer = createGraphics(width, height);
+  bgLayer.beginDraw();
+  bgLayer.image(bg, 0, 0, width, height);
+  bgLayer.endDraw();
   playerY = height - 100;
 
   // 敵画像読み込み（dataフォルダに enemy.png を置く）
@@ -118,7 +125,6 @@ void initGame() {
   playerAttackImageR = loadImage("player_attack_R.png");
   playerAttackImageL = loadImage("player_attack_R.png");
   platforms = new ArrayList<Platform>();
-  bg=loadImage("haikei.png");
   tyuukann = loadImage("tyuukann.png");
   itemTexture = loadImage("item.png"); // dataフォルダに item.png を置く（任意）
 
@@ -1189,3 +1195,4 @@ if (collidesWith(playerX, playerY, playerW, playerH)) {
     minim.stop();
     super.stop();
   }
+
