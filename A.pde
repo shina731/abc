@@ -31,7 +31,8 @@ int attackDuration = 10;  // 攻撃の持続時間（フレーム数）
 int attackTimer = 0;
 ArrayList<Enemy> enemies;
 int bossTouchCooldown = 0;  // ボス接触後に移動禁止にする時間（フレーム数）
-
+ArrayList<RangedEnemy> rangedEnemies = new ArrayList<RangedEnemy>();
+ArrayList<Missile> missiles = new ArrayList<Missile>();
 // スクロール
 float cameraX = 0;
 // ボスエリア制御用の変数
@@ -129,7 +130,6 @@ void initGame() {
   enemyTexture3 = loadImage("enemy3.png");
   playerTexture = loadImage("player.png");
   playerAttackImageR = loadImage("player_attack_R.png");
-  playerAttackImageL = loadImage("player_attack_R.png");
   platforms = new ArrayList<Platform>();
   tyuukann = loadImage("tyuukann.png");
   itemTexture = loadImage("item.png"); // dataフォルダに item.png を置く（任意）
@@ -168,14 +168,14 @@ void initGame() {
   platforms.add(new Platform(400, height - 180, 80, 20));
   platforms.add(new Platform(600, height - 240, 80, 20));
   platforms.add(new Platform(950, height - 250, 40, 250));
-  platforms.add(new Platform(1650, height - 150, 30, 20));
-  platforms.add(new Platform(1760, height - 225, 30, 20));
-  platforms.add(new Platform(1870, height - 300, 30, 20));
-  platforms.add(new Platform(1980, height - 225, 30, 20));
-  platforms.add(new Platform(2090, height - 150, 30, 20));
-  platforms.add(new Platform(2650, height - 150, 30, 20));
+  platforms.add(new Platform(1650, height - 150, 50, 20));
+  platforms.add(new Platform(1760, height - 225, 50, 20));
+  platforms.add(new Platform(1870, height - 300, 50, 20));
+  platforms.add(new Platform(1980, height - 225, 50, 20));
+  platforms.add(new Platform(2090, height - 150, 50, 20));
+  platforms.add(new Platform(2650, height - 150, 40, 20));
+ 
   platforms.add(new Platform(3400, height - 125, 30, 20));
-
   platforms.add(new Platform(3600, height - 125, 30, 20));
 
   platforms.add(new Platform(4000, height - 120, 100, 20));
@@ -188,10 +188,10 @@ void initGame() {
   // setup()などで敵追加
   enemies.add(new Enemy(1400, height - 100, 40, 60, enemyTexture));
   enemies.add(new Enemy(3300, height - 100, 40, 60, enemyTexture1));
-  enemies.add(new Enemy(3400, height - 205, 40, 60, enemyTexture2));
-  enemies.add(new Enemy(3500, height - 100, 40, 60, enemyTexture3));
-  enemies.add(new Enemy(3600, height - 205, 40, 60, enemyTexture));
-  enemies.add(new Enemy(3700, height - 100, 40, 60, enemyTexture));
+  enemies.add(new Enemy(3700, height - 100, 40, 60, enemyTexture2));
+
+  rangedEnemies.add(new RangedEnemy(3400, 200, 50, 50, enemyTexture3));
+  rangedEnemies.add(new RangedEnemy(3600, 200, 50, 50, enemyTexture3));
 
   //日本語対応_字体「メイリオ」
   PFont font = createFont("Meiryo", 50);
@@ -220,13 +220,6 @@ void drawPlayer() {
   if (invincible && (invincibleTimer / 5) % 2 != 0) {
     return; // 何も描画しない（点滅）
   }
-
- 
-
-
-
-
-
   PImage currentImage;
 
   if (isAttacking) {
@@ -245,7 +238,6 @@ void drawPlayer() {
   } else {
     image(currentImage, playerX, playerY, 70, 60);
   }
-
   popMatrix();
 }
 
@@ -255,8 +247,6 @@ void drawGame() {
   if (bg != null) {
     image(bgLayer, 0, 0);
   }
-
-
   // スタート画面
   if (!gameStarted) {
     fill(255);
@@ -277,7 +267,6 @@ void drawGame() {
       deathAnimationPlaying = false;
     }
   }
-
   if (gameOver) {
     if (gameOver && !gameOverSoundPlayed) {
       gameoverSound.rewind(); // 最初から再生
@@ -311,23 +300,19 @@ void drawGame() {
   // 重力
   velocityY += gravity;
 
-
   if (inBossArea) {
     cameraX = bossAreaStartX;
-
     // 左に出られないように制限
     if (playerX < bossAreaStartX) {
       playerX = bossAreaStartX;
       velocityX = max(0, velocityX); // 左向きの速度を止める
     }
-
     // 右に出られないように制限
     if (playerX + playerW > bossAreaEndX) {
       playerX = bossAreaEndX - playerW;
       velocityX = min(0, velocityX); // 右向きの速度を止める
     }
   }
-
 
   // ノックバック加算
   // 横方向：velocityX分の移動判定と移動
@@ -460,7 +445,6 @@ if (onGround) {
     deathAnimationTimer = 10;
   }
 
-
   // 足場との判定
   for (Platform p : platforms) {
     if (velocityY >= 0 &&
@@ -530,7 +514,6 @@ if (onGround) {
         knockbackX = 10;
       }
       knockbackY = -8;
-
       println("ダメージ！ hp：" + currentHP);
 
       if (currentHP <= 0) {
@@ -542,8 +525,6 @@ if (onGround) {
   }
 }
 
-
-
   // 無敵時間カウント
   if (invincible) {
     invincibleTimer--;
@@ -551,15 +532,12 @@ if (onGround) {
       invincible = false;
     }
   }
-
   if (!healed &&
     playerX + playerW > healX &&
     playerX < healX + healW &&
     playerY + playerH > healY &&
     playerY < healY + healH) {
-
     currentHP = maxHP;
-
     healed = true;   // 一度だけ回復
     println("hpが全回復した！");
     if (lifeitemgetSound != null&&//音声を再生
@@ -594,10 +572,8 @@ if (onGround) {
 
       // アイテムを取得済みリストへ移動
       collectedItems.add(item);
-
       // アイテムをフィールドから削除
       items.remove(i);
-
       println("アイテムをゲット！");
       if (itemgetSound != null&&//音声を再生
         !itemgetSound.isPlaying()) {
@@ -615,14 +591,11 @@ if (onGround) {
       playerX < e.x + e.w &&
       playerY + playerH > e.y &&
       playerY < e.y + e.h) {
-
       float overlapLeft = (playerX + playerW) - e.x;
       float overlapRight = (e.x + e.w) - playerX;
       float overlapTop = (playerY + playerH) - e.y;
       float overlapBottom = (e.y + e.h) - playerY;
-
       float minOverlap = min(min(overlapLeft, overlapRight), min(overlapTop, overlapBottom));
-
       if (minOverlap == overlapLeft) {
         playerX -= overlapLeft;
       } else if (minOverlap == overlapRight) {
@@ -638,22 +611,17 @@ if (onGround) {
     }
   }
 
-
   // カメラ位置
   cameraX = playerX - width / 2;
-
-  // ボスエリア制御
   // ボスエリア突入チェック
   if (playerX >= bossAreaStartX && bossPhase == 0) {
     inBossArea = true;
     bossPhase = 1;
     bossPhaseTimer = 0;  // フェーズ1開始
   }
-
   // ボスエリア制御
   if (inBossArea) {
     cameraX = bossCameraX;
-
     // BGM切替（初回のみ）
     if (!bossBGMPlaying) {
       if (bgm != null && bgm.isPlaying()) {
@@ -712,30 +680,22 @@ if (onGround) {
     cameraX = playerX - width / 2;
   }
 
-
-
-
   // 描画
   pushMatrix();
   translate(-cameraX, 0);
-
   drawPlayer();
-
   if (isAttacking) {
     attackTimer--;
     if (attackTimer <= 0) {
       isAttacking = false;
     }
-
     float axeX, axeY, axeW, axeH;
     axeW = 20;
     axeH = 40;
     axeY = playerY + playerH / 2 - axeH / 2;
     axeX = playerFacingRight ? playerX + playerW : playerX - axeW;
-
     fill(255, 255, 0, 0);
     rect(axeX, axeY, axeW, axeH);
-
     for (Enemy e : enemies) {
       if (!e.isDead &&
         axeX + axeW > e.x &&
@@ -743,9 +703,7 @@ if (onGround) {
         axeY + axeH > e.y &&
         axeY < e.y + e.h &&
         !e.isInvincible) {
-
         e.hp -= 10;
-
         // プレイヤーが敵に攻撃を当てたとき
         if (playerX + playerW / 2 < e.x + e.w / 2) {
           e.knockbackX = 8;  // 右へノックバック
@@ -761,22 +719,48 @@ if (onGround) {
           e.isInvincible = true;
           e.invincibleTimer = 60;
         }
-
         attackHit = true;
         e.charging = false;
         e.chargeCooldown = 60;
         e.pauseTimer = 30;
-
         println("攻撃成功！ 残りHP：" + e.hp);
         if (attackSound != null && !attackSound.isPlaying()) {
           attackSound.rewind();
           attackSound.play();
         }
-
         break; // 多段ヒット防止
       }
     }
-
+for (RangedEnemy re : rangedEnemies) {
+  if (!re.isDead &&
+      axeX + axeW > re.x &&
+      axeX < re.x + re.w &&
+      axeY + axeH > re.y &&
+      axeY < re.y + re.h &&
+      !re.isInvincible) {
+    re.hp -= 10;
+    // ノックバック処理（RangedEnemy用に少し弱めでも良いかも）
+    if (playerX + playerW / 2 < re.x + re.w / 2) {
+      velocityX = 8;  // 右へノックバック
+    } else {
+      velocityX = -8; // 左へノックバック
+    }
+    re.velocityY = -8; // 少し上へ吹っ飛ばす
+    if (re.hp <= 0) {
+      re.isDead = true;
+    } else {
+      re.isInvincible = true;
+      re.invincibleTimer = 60;
+    }
+    attackHit = true;
+    println("遠距離敵 攻撃成功！ 残りHP：" + re.hp);
+    if (attackSound != null && !attackSound.isPlaying()) {
+      attackSound.rewind();
+      attackSound.play();
+    }
+    break;
+}
+}
     if (!attackHit && missattackSound != null && !missattackSound.isPlaying()) {
       missattackSound.rewind();
       missattackSound.play();
@@ -784,12 +768,10 @@ if (onGround) {
     attackHit = false;
   }
 
-
   // 足場描画
   for (Platform p : platforms) {
     p.display();
   }
-
   // 敵描画
   for (Enemy e : enemies) {
     if (abs(e.x - playerX) < width * 1.5) { // プレイヤーの近くのみ更新
@@ -797,9 +779,17 @@ if (onGround) {
       e.display();
     }
   }
-
-
-
+for (RangedEnemy re : rangedEnemies) {
+  re.update();
+  re.display();
+}
+// ミサイル更新と描画
+for (Missile m : missiles) {
+  m.update();
+  m.display();
+}
+// 死んだミサイルは削除
+missiles.removeIf(m -> !m.active);
 
   // アイテム描画
   for (Item item : items) {
@@ -810,29 +800,20 @@ if (onGround) {
   image(tyuukann, checkpointX, checkpointY, 40, 40);
   popMatrix();
 
-  // 更新
-
-
-
-
-
   // HPバー表示
   int barWidth = 200;
   int barHeight = 20;
   int barX = 10;
   int barY = 10;
-
   fill(0);
   rect(barX - 2, barY - 2, barWidth + 4, barHeight + 4); // 黒い枠
   fill(0, 100, 0);
   float hpRatio = float(currentHP) / maxHP;
   rect(barX, barY, barWidth * hpRatio, barHeight);
-
   fill(0);
   textSize(20);
   textAlign(RIGHT, TOP);
   text("Time: " + nf(secondsLeft, 2) + "s", width - 10, 10);
-
 
   // ゲットしたアイテムを小さく表示
   for (int i = 0; i < collectedItems.size(); i++) {
@@ -840,7 +821,6 @@ if (onGround) {
     float displaySize = 20;
     float x = 10 + i * (displaySize + 5);
     float y = 40;
-
     if (item.texture != null) {
       image(item.texture, x, y, displaySize, displaySize);
     } else {
@@ -848,6 +828,7 @@ if (onGround) {
       rect(x, y, displaySize, displaySize);
     }
   }
+
   //足音
   if ((leftPressed || rightPressed) && onGround && !keyPressed || (keyPressed && key != ' ')) {
     if (!isRunSoundPlaying && runSound != null) {
@@ -875,6 +856,7 @@ if (onGround) {
     }
   }
 }
+
 int jumpCount = 0;
 int maxJumpCount = 2;  // 2段ジャンプまで許可
 // 入力処理
@@ -887,7 +869,6 @@ void handleGameKey() {
     }
     return;
   }
-
   if (gameOver && gameOverTimer <= 0 && keyCode == ENTER) {
     resetGame();
     if (enterSound != null) {
@@ -910,7 +891,6 @@ void handleGameKey() {
     attackTimer = attackDuration;
      attackRight = playerFacingRight;  // 向いている方向に攻撃
   }
-
   if (key == ' ') {
      if (jumpCount < maxJumpCount) {
       velocityY = jumpPower;
@@ -924,7 +904,6 @@ void handleGameKey() {
      jumpPressed = true;
        }
 }
-
 void handleGameKeyReleased() {
   if (key == 'a' || key == 'A') {
     leftPressed = false;
@@ -946,16 +925,11 @@ class Platform {
     this.w = w;
     this.h = h;
   }
-
   void display() {
     fill(100, 60, 20);
     rect(x, y, w, h);
   }
 }
-
-
-
-
 
 // Enemyクラス（画像対応）
 class Enemy {
@@ -969,19 +943,15 @@ class Enemy {
   int pauseTimer = 0;
   int direction = -1;
   PImage texture;
-
   int chasingTimer = 0;
   final int maxChasingTime = 50;
-
   float velocityY = 0;
   float gravity = 0.8;
   boolean onGround = false;
   boolean isInvincible = false;
   int invincibleTimer = 0;
-
-  int hp = 30;
+  int hp = 20;
   boolean isDead = false;
-
   Enemy(float x, float y, float w, float h, PImage texture) {
     this.x = x;
     this.y = y;
@@ -1045,7 +1015,6 @@ class Enemy {
         onGround = true;
       }
     }
-
     if (pauseTimer > 0) {
       pauseTimer--;
       return;
@@ -1057,22 +1026,17 @@ class Enemy {
 
     float pxCenter = playerX + playerW / 2;
     float exCenter = x + w / 2;
-
     boolean playerInRange = abs(pxCenter - exCenter) < detectRange;
     // boolean sameHeight = abs(playerY - y) < 40;
-
     if (!charging && playerInRange/*&& sameHeight*/) {
       charging = true;
       chasingTimer = 0;
       direction = (pxCenter > exCenter) ? 1 : -1;
     }
-
     if (charging) {
       chasingTimer++;
-
       float nextX = x + direction * speed * 2;
       boolean hitWall = false;
-
       for (Platform p : platforms) {
         if (nextX + w > p.x && nextX < p.x + p.w &&
           y + h > p.y && y < p.y + p.h) {
@@ -1097,7 +1061,6 @@ class Enemy {
         direction *= -1;
         chargeCooldown = 60;
       }
-
       float pxCenterNow = playerX + playerW / 2;
       float exCenterNow = x + w / 2;
       if (abs(pxCenterNow - exCenterNow) < 10) {
@@ -1115,7 +1078,6 @@ class Enemy {
 
   void display() {
     if (isDead) return;
-
     if (texture != null) {
       pushMatrix();
       translate(x + w / 2, y);
@@ -1147,15 +1109,204 @@ class Enemy {
     }
   }
 
-
   boolean collidesWith(float px, float py, float pw, float ph) {
     if (isDead) return false;
     return px < x + w && px + pw > x && py < y + h && py + ph > y;
   }
 }
 
+class RangedEnemy {
+  float x, y, w, h;
+  float speed = 1.5;
+  float detectRange = 400;
+  float gravity = 0.8;
+  float velocityY = 0;
+  boolean onGround = false;
+  boolean isDead = false;
+  boolean collidesWith(float px, float py, float pw, float ph) {
+  if (isDead) return false;
+  return px < x + w && px + pw > x && py < y + h && py + ph > y;
+}
 
 
+  int direction = 1; // 1:右向き, -1:左向き
+
+  float knockbackX = 0;
+  float knockbackY = 0;
+
+  PImage texture;
+  int hp = 10;
+  boolean isInvincible = false;
+  int invincibleTimer = 0;
+
+  int shootCooldown = 0;
+  int shootInterval = 90; // 90フレームごとに発射
+
+  RangedEnemy(float x, float y, float w, float h, PImage texture) {
+    this.x = x;
+    this.y = y;
+    this.w = w;
+    this.h = h;
+    this.texture = texture;
+  }
+
+  void update() {
+    if (isDead) return;
+
+    if (isInvincible) {
+      invincibleTimer--;
+      if (invincibleTimer <= 0) isInvincible = false;
+    }
+
+    // ノックバック処理（慣性減衰）
+    if (knockbackX != 0 || knockbackY != 0) {
+      x += knockbackX;
+      y += knockbackY;
+
+      knockbackX *= 0.95;
+      knockbackY *= 0.95;
+
+      if (abs(knockbackX) < 0.1) knockbackX = 0;
+      if (abs(knockbackY) < 0.1) knockbackY = 0;
+    }
+
+    // 重力・落下処理
+    if (!onGround) velocityY += gravity;
+    y += velocityY;
+
+    onGround = false;
+    for (Platform p : platforms) {
+      if (
+        velocityY >= 0 &&
+        x + w > p.x &&
+        x < p.x + p.w &&
+        y + h > p.y &&
+        y + h - velocityY <= p.y
+      ) {
+        y = p.y - h;
+        velocityY = 0;
+        onGround = true;
+      }
+    }
+
+    // プレイヤーとの距離と方向計算
+    float pxCenter = playerX + playerW / 2;
+    float pyCenter = playerY + playerH / 2;
+    float exCenter = x + w / 2;
+    float eyCenter = y + h / 2;
+    float distToPlayer = dist(exCenter, eyCenter, pxCenter, pyCenter);
+
+    // 向きを更新（右向き or 左向き）
+    direction = (pxCenter >= exCenter) ? 1 : -1;
+
+    // 一定距離以内で発射
+    if (distToPlayer < detectRange) {
+      if (shootCooldown <= 0) {
+        missiles.add(new Missile(exCenter, eyCenter, pxCenter, pyCenter));
+        shootCooldown = shootInterval;
+      }
+    }
+
+    if (shootCooldown > 0) shootCooldown--;
+  }
+
+  void display() {
+    if (isDead) return;
+    if (texture != null) {
+      pushMatrix();
+      translate(x + w / 2, y);
+      scale(direction, 1);
+      image(texture, -w/2, 0, w, h);
+      popMatrix();
+    } else {
+      fill(255, 150, 0);
+      rect(x, y, w, h);
+    }
+  }
+
+  void takeDamage(int damage, float knockbackPowerX, float knockbackPowerY) {
+    if (isInvincible || isDead) return;
+    hp -= damage;
+    if (hp <= 0) {
+      isDead = true;
+    } else {
+      isInvincible = true;
+      invincibleTimer = 30;
+      // ノックバック反映
+      knockbackX = knockbackPowerX;
+      knockbackY = knockbackPowerY;
+    }
+  }
+}
+
+class Missile {
+  float x, y;
+  float vx, vy;
+  float speed = 5;
+  float w = 16;
+  float h = 16;
+  boolean active = true;
+
+  Missile(float x, float y, float targetX, float targetY) {
+    this.x = x;
+    this.y = y;
+    float dx = targetX - x;
+    float dy = targetY - y;
+    float dist = dist(x, y, targetX, targetY);
+    vx = dx / dist * speed;
+    vy = dy / dist * speed;
+  }
+
+  void update() {
+    if (!active) return;
+    x += vx;
+    y += vy;
+
+    // 画面外や障害物に当たったら消滅
+    if (x < cameraX - 100 || x > cameraX + width + 100 || y < -100 || y > height + 100) {
+      active = false;
+    }
+
+    // プレイヤーに当たり判定
+if (collidesWith(playerX, playerY, playerW, playerH)) {
+  if (!invincible) {
+    currentHP -= 10;
+
+    // ノックバックの強さと方向設定（例：ミサイルが来た方向と逆向きに押す）
+    float knockbackForceX = (playerX < x) ? -10 : 10;  // ミサイルのx座標 x と比較
+    float knockbackForceY = -5; // 少し上方向にもノックバック
+
+    // ノックバック値をグローバル変数へセット
+    knockbackX = knockbackForceX;
+    knockbackY = knockbackForceY;
+
+    if (currentHP <= 0) {
+      currentHP = 0;
+      gameOver = true;
+      gameOverTimer = 120; // 2秒間の待機など
+      deathAnimationPlaying = true;
+      deathAnimationTimer = 60;
+      gameOverSoundPlayed = false;
+    } else {
+      invincible = true;
+      invincibleTimer = 60;
+    }
+  }
+  active = false; // ミサイル消去
+}
+  }
+
+
+  void display() {
+    if (!active) return;
+    fill(255, 0, 0);
+    ellipse(x, y, w, h);
+  }
+
+  boolean collidesWith(float px, float py, float pw, float ph) {
+    return px < x + w && px + pw > x && py < y + h && py + ph > y;
+  }
+}
 
 class Item {
   float x, y, w, h;
@@ -1204,10 +1355,9 @@ void resetGame() {
   enemies.clear();
   enemies.add(new Enemy(1400, height - 100, 40, 60, enemyTexture));
   enemies.add(new Enemy(3300, height - 205, 40, 60, enemyTexture1));
-  enemies.add(new Enemy(3400, height - 205, 40, 60, enemyTexture2));
-  enemies.add(new Enemy(3500, height - 205, 40, 60, enemyTexture3));
-  enemies.add(new Enemy(3600, height - 205, 40, 60, enemyTexture));
-  enemies.add(new Enemy(3700, height - 205, 40, 60, enemyTexture));
+  enemies.add(new Enemy(3700, height - 205, 40, 60, enemyTexture2));
+  rangedEnemies.add(new RangedEnemy(3400, 200, 50, 50, enemyTexture3));
+  rangedEnemies.add(new RangedEnemy(3600, 200, 50, 50, enemyTexture3));
   healed = false; // 回復状態を初期化
   items.clear();
   items.add(new Item(630, height - 270, 30, 30, itemTexture));
@@ -1235,3 +1385,4 @@ void stop() {
   minim.stop();
   super.stop();
 }
+
