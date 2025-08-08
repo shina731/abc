@@ -905,9 +905,6 @@ void handleGameKey() {
     rightPressed = true;
     playerFacingRight = true;   // ← 右向きにセット
   }
-  if (key == CODED && keyCode == SHIFT) {
-    shiftPressed = true;
-  }
   if (key == 'w' || key == 'W') {
      isAttacking = true;
     attackTimer = attackDuration;
@@ -934,9 +931,6 @@ void handleGameKeyReleased() {
   }
   if (key == 'd' || key == 'D') {
     rightPressed = false;
-  }
-  if (key == CODED && keyCode == SHIFT) {
-    shiftPressed = false;
   }
   if (key ==' ') {
     jumpPressed = false;
