@@ -24,6 +24,7 @@ float checkpointX = 2250;
 float checkpointY;
 PImage tyuukann;
 boolean reachedCheckpoint = false;
+boolean checkpointSoundPlayed = false;
 boolean isAttacking = false;
 boolean attackRight = true;
 int attackDuration = 10;  // 攻撃の持続時間（フレーム数）
@@ -113,7 +114,7 @@ PGraphics bgLayer;
 
 void initGame() {
   size(800, 400);
-    bg = loadImage("haikei.jpg");
+  bg = loadImage("haikei.jpg");
   bgLayer = createGraphics(width, height);
   bgLayer.beginDraw();
   bgLayer.image(bg, 0, 0, width, height);
@@ -142,23 +143,23 @@ void initGame() {
   items.add(new Item(4700, height - 400, 30, 30, itemTexture));
   // 地面
   int[][] holeRanges = {
-  {20, 27}, // 穴①（例：x = 1600〜2160）
-  {31, 36}, // 穴②（例：x = 2800〜2960）
-  {50, 52}  // 穴③（例：x = 4000〜4160）
-};
+    {20, 27}, // 穴①（例：x = 1600〜2160）
+    {31, 36}, // 穴②（例：x = 2800〜2960）
+    {50, 52}  // 穴③（例：x = 4000〜4160）
+  };
 
-for (int i = -10; i < 70; i++) {
-  boolean skip = false;
-  for (int[] range : holeRanges) {
-    if (i >= range[0] && i <= range[1]) {
-      skip = true;
-      break;
+  for (int i = -10; i < 70; i++) {
+    boolean skip = false;
+    for (int[] range : holeRanges) {
+      if (i >= range[0] && i <= range[1]) {
+        skip = true;
+        break;
+      }
     }
-  }
-  if (skip) continue;
+    if (skip) continue;
 
-  platforms.add(new Platform(i * 80, height - 40, 80, 40));
-}
+    platforms.add(new Platform(i * 80, height - 40, 80, 40));
+  }
 
   checkpointY = height - 100;  // 最初の開始地点
 
@@ -172,25 +173,25 @@ for (int i = -10; i < 70; i++) {
   platforms.add(new Platform(1870, height - 300, 30, 20));
   platforms.add(new Platform(1980, height - 225, 30, 20));
   platforms.add(new Platform(2090, height - 150, 30, 20));
-   platforms.add(new Platform(2650, height - 150, 30, 20));
-  platforms.add(new Platform(3400, height - 125,30, 20));
- 
-  platforms.add(new Platform(3600, height - 125,30, 20));
-  
+  platforms.add(new Platform(2650, height - 150, 30, 20));
+  platforms.add(new Platform(3400, height - 125, 30, 20));
+
+  platforms.add(new Platform(3600, height - 125, 30, 20));
+
   platforms.add(new Platform(4000, height - 120, 100, 20));
   platforms.add(new Platform(4250, height - 180, 100, 20));
   platforms.add(new Platform(4500, height - 240, 100, 20));
-  
-  
-  
+
+
+
   enemies = new ArrayList<Enemy>(); // ★ enemiesリストを初期化
   // setup()などで敵追加
-enemies.add(new Enemy(1400, height - 100, 40, 60,enemyTexture));
-enemies.add(new Enemy(3300, height - 205, 40, 60, enemyTexture1));
+  enemies.add(new Enemy(1400, height - 100, 40, 60, enemyTexture));
+  enemies.add(new Enemy(3300, height - 100, 40, 60, enemyTexture1));
   enemies.add(new Enemy(3400, height - 205, 40, 60, enemyTexture2));
-  enemies.add(new Enemy(3500, height - 205, 40, 60, enemyTexture3));
+  enemies.add(new Enemy(3500, height - 100, 40, 60, enemyTexture3));
   enemies.add(new Enemy(3600, height - 205, 40, 60, enemyTexture));
-  enemies.add(new Enemy(3700, height - 205, 40, 60, enemyTexture));
+  enemies.add(new Enemy(3700, height - 100, 40, 60, enemyTexture));
 
   //日本語対応_字体「メイリオ」
   PFont font = createFont("Meiryo", 50);
@@ -219,6 +220,13 @@ void drawPlayer() {
   if (invincible && (invincibleTimer / 5) % 2 != 0) {
     return; // 何も描画しない（点滅）
   }
+
+ 
+
+
+
+
+
   PImage currentImage;
 
   if (isAttacking) {
@@ -259,7 +267,7 @@ void drawGame() {
     text("Enterキーでスタート", width / 2, height / 2 + 20);
     return;
   }
-onGround = false;
+  onGround = false;
   // ゲームオーバー処理
   if (deathAnimationPlaying) {
     deathAnimationTimer--;
@@ -271,7 +279,7 @@ onGround = false;
   }
 
   if (gameOver) {
-     if (gameOver && !gameOverSoundPlayed) {
+    if (gameOver && !gameOverSoundPlayed) {
       gameoverSound.rewind(); // 最初から再生
       gameoverSound.play();
       gameOverSoundPlayed = true;
@@ -320,116 +328,114 @@ onGround = false;
     }
   }
 
-  
+
   // ノックバック加算
- // 横方向：velocityX分の移動判定と移動
-float nextX = playerX + velocityX;
-boolean collidedX = false;
-for (Platform p : platforms) {
-  if (playerY + playerH > p.y && playerY < p.y + p.h) {
-    if (velocityX > 0 && nextX + playerW > p.x && playerX + playerW <= p.x) {
-      collidedX = true;
-      playerX = p.x - playerW;
-      velocityX = 0;
-      break;
-    }
-    if (velocityX < 0 && nextX < p.x + p.w && playerX >= p.x + p.w) {
-      collidedX = true;
-      playerX = p.x + p.w;
-      velocityX = 0;
-      break;
-    }
-  }
-}
-if (!collidedX) {
-  playerX = nextX;
-}
-
-// 横方向：knockbackX分の移動判定と移動
-float nextKnockX = playerX + knockbackX;
-boolean collidedKnockX = false;
-for (Platform p : platforms) {
-  if (playerY + playerH > p.y && playerY < p.y + p.h) {
-    if (knockbackX > 0 && nextKnockX + playerW > p.x && playerX + playerW <= p.x) {
-      collidedKnockX = true;
-      playerX = p.x - playerW;
-      knockbackX = 0;
-      break;
-    }
-    if (knockbackX < 0 && nextKnockX < p.x + p.w && playerX >= p.x + p.w) {
-      collidedKnockX = true;
-      playerX = p.x + p.w;
-      knockbackX = 0;
-      break;
+  // 横方向：velocityX分の移動判定と移動
+  float nextX = playerX + velocityX;
+  boolean collidedX = false;
+  for (Platform p : platforms) {
+    if (playerY + playerH > p.y && playerY < p.y + p.h) {
+      if (velocityX > 0 && nextX + playerW > p.x && playerX + playerW <= p.x) {
+        collidedX = true;
+        playerX = p.x - playerW;
+        velocityX = 0;
+        break;
+      }
+      if (velocityX < 0 && nextX < p.x + p.w && playerX >= p.x + p.w) {
+        collidedX = true;
+        playerX = p.x + p.w;
+        velocityX = 0;
+        break;
+      }
     }
   }
-}
-if (!collidedKnockX) {
-  playerX = nextKnockX;
-}
+  if (!collidedX) {
+    playerX = nextX;
+  }
 
-// 縦方向：velocityY分の移動判定と移動
-float nextY = playerY + velocityY;
-boolean collidedY = false;
-for (Platform p : platforms) {
-  // 足場に着地判定
-  if (velocityY >= 0 && 
+  // 横方向：knockbackX分の移動判定と移動
+  float nextKnockX = playerX + knockbackX;
+  boolean collidedKnockX = false;
+  for (Platform p : platforms) {
+    if (playerY + playerH > p.y && playerY < p.y + p.h) {
+      if (knockbackX > 0 && nextKnockX + playerW > p.x && playerX + playerW <= p.x) {
+        collidedKnockX = true;
+        playerX = p.x - playerW;
+        knockbackX = 0;
+        break;
+      }
+      if (knockbackX < 0 && nextKnockX < p.x + p.w && playerX >= p.x + p.w) {
+        collidedKnockX = true;
+        playerX = p.x + p.w;
+        knockbackX = 0;
+        break;
+      }
+    }
+  }
+  if (!collidedKnockX) {
+    playerX = nextKnockX;
+  }
+
+  // 縦方向：velocityY分の移動判定と移動
+  float nextY = playerY + velocityY;
+  boolean collidedY = false;
+  for (Platform p : platforms) {
+    // 足場に着地判定
+    if (velocityY >= 0 &&
       playerX + playerW > p.x && playerX < p.x + p.w &&
       nextY + playerH > p.y && playerY + playerH <= p.y) {
-    collidedY = true;
-    playerY = p.y - playerH;
-    velocityY = 0;
-    knockbackY = 0;
-    onGround = true;
-   // 着地時ノックバックリセットも多い
-    break;
-  }
-  // 天井にぶつかる判定
-  if (velocityY < 0 &&
+      collidedY = true;
+      playerY = p.y - playerH;
+      velocityY = 0;
+      knockbackY = 0;
+      onGround = true;
+      // 着地時ノックバックリセットも多い
+      break;
+    }
+    // 天井にぶつかる判定
+    if (velocityY < 0 &&
       playerX + playerW > p.x && playerX < p.x + p.w &&
       nextY < p.y + p.h && playerY >= p.y + p.h) {
-    collidedY = true;
-    playerY = p.y + p.h;
-    velocityY = 0;
-    knockbackY = 0;
-    break;
+      collidedY = true;
+      playerY = p.y + p.h;
+      velocityY = 0;
+      knockbackY = 0;
+      break;
+    }
   }
-}
-if (!collidedY) {
-  playerY = nextY;
-}
+  if (!collidedY) {
+    playerY = nextY;
+  }
 
-// 縦方向：knockbackY分の移動判定と移動
-float nextKnockY = playerY + knockbackY;
-boolean collidedKnockY = false;
-for (Platform p : platforms) {
-  // 足場にぶつかる判定
-  if (knockbackY > 0 &&
+  // 縦方向：knockbackY分の移動判定と移動
+  float nextKnockY = playerY + knockbackY;
+  boolean collidedKnockY = false;
+  for (Platform p : platforms) {
+    // 足場にぶつかる判定
+    if (knockbackY > 0 &&
       playerX + playerW > p.x && playerX < p.x + p.w &&
       nextKnockY + playerH > p.y && playerY + playerH <= p.y) {
-    collidedKnockY = true;
-    playerY = p.y - playerH;
-    knockbackY = 0;
-    break;
-  }
-  // 天井にぶつかる判定
-  if (knockbackY < 0 &&
+      collidedKnockY = true;
+      playerY = p.y - playerH;
+      knockbackY = 0;
+      break;
+    }
+    // 天井にぶつかる判定
+    if (knockbackY < 0 &&
       playerX + playerW > p.x && playerX < p.x + p.w &&
       nextKnockY < p.y + p.h && playerY >= p.y + p.h) {
-    collidedKnockY = true;
-    playerY = p.y + p.h;
-    knockbackY = 0;
-    break;
+      collidedKnockY = true;
+      playerY = p.y + p.h;
+      knockbackY = 0;
+      break;
+    }
   }
-}
-if (!collidedKnockY) {
-  playerY = nextKnockY;
-}
-
+  if (!collidedKnockY) {
+    playerY = nextKnockY;
+  }
 if (onGround) {
   jumpCount = 0;  // 地面に着いたらジャンプ回数をリセット
 }
-
 
   // ノックバック減衰
   knockbackX *= 0.9;
@@ -437,8 +443,8 @@ if (onGround) {
 
   // 落下によるゲームオーバー
   if (playerY > height + 100 && !deathAnimationPlaying && !gameOver) {
-     currentHP = 0;
-     deathAnimationPlaying = true;
+    currentHP = 0;
+    deathAnimationPlaying = true;
     deathAnimationTimer = 10;
   }
   int elapsed = millis() - startTime;
@@ -506,39 +512,36 @@ if (onGround) {
       playerY + playerH > e.y &&
       playerY < e.y + e.h) {
 
-    int damageAmount = 20;
-currentHP -= damageAmount;
-invincible = true;
-invincibleTimer = 60;
+    if (!invincible) {  // 無敵じゃなければダメージ判定
+      int damageAmount = 20;
+      currentHP -= damageAmount;
+      invincible = true;
+      invincibleTimer = 60; // 無敵時間60フレーム（約1秒）
 
-if (damageSound != null && !damageSound.isPlaying()) {
-  damageSound.rewind();
-  damageSound.play();
-}
+      if (damageSound != null && !damageSound.isPlaying()) {
+        damageSound.rewind();
+        damageSound.play();
+      }
 
-if (currentHP <= 0) {
-  deathAnimationPlaying = true;
-  deathAnimationTimer = 60;
-}
+      // ノックバックの設定
+      if (playerX + playerW / 2 < e.x + e.w / 2) {
+        knockbackX = -10;
+      } else {
+        knockbackX = 10;
+      }
+      knockbackY = -8;
 
+      println("ダメージ！ hp：" + currentHP);
 
-    // ノックバック（敵の反対方向へ）
-    if (playerX + playerW / 2 < e.x + e.w / 2) {
-      knockbackX = -7;
-    } else {
-      knockbackX = 7;
+      if (currentHP <= 0) {
+        deathAnimationPlaying = true;
+        deathAnimationTimer = 60;
+      }
     }
-    knockbackY = -5;
-
-    println("ダメージ！ hp：" + currentHP);
-
-    if ( currentHP <= 0) {
-      deathAnimationPlaying = true;
-      deathAnimationTimer = 60; // 余韻
-    }
-    break;  // １体の敵だけで処理終了
+    break; // １体の敵だけ処理
   }
 }
+
 
 
   // 無敵時間カウント
@@ -573,9 +576,15 @@ if (currentHP <= 0) {
     checkpointX = healX;
     checkpointY = healY - playerH;
     reachedCheckpoint = true;
+    if (!checkpointSoundPlayed) {
     println("チェックポイント到達！");
+    if (lifeitemgetSound != null && !lifeitemgetSound.isPlaying()) {
+      lifeitemgetSound.rewind();
+      lifeitemgetSound.play();
   }
-
+ checkpointSoundPlayed = true;  // 音は一度だけ鳴らす
+    }
+    }
   for (int i = items.size() - 1; i >= 0; i--) {
     Item item = items.get(i);
     if (playerX + playerW > item.x &&
@@ -599,35 +608,35 @@ if (currentHP <= 0) {
   }
 
   // 敵との通り抜け防止（押し戻し）
- for (Enemy e : enemies) {
-  if (e.isDead) continue;  // 死んだ敵は無視する
-  
-  if (playerX + playerW > e.x &&
+  for (Enemy e : enemies) {
+    if (e.isDead) continue;  // 死んだ敵は無視する
+
+    if (playerX + playerW > e.x &&
       playerX < e.x + e.w &&
       playerY + playerH > e.y &&
       playerY < e.y + e.h) {
 
-    float overlapLeft = (playerX + playerW) - e.x;
-    float overlapRight = (e.x + e.w) - playerX;
-    float overlapTop = (playerY + playerH) - e.y;
-    float overlapBottom = (e.y + e.h) - playerY;
+      float overlapLeft = (playerX + playerW) - e.x;
+      float overlapRight = (e.x + e.w) - playerX;
+      float overlapTop = (playerY + playerH) - e.y;
+      float overlapBottom = (e.y + e.h) - playerY;
 
-    float minOverlap = min(min(overlapLeft, overlapRight), min(overlapTop, overlapBottom));
+      float minOverlap = min(min(overlapLeft, overlapRight), min(overlapTop, overlapBottom));
 
-    if (minOverlap == overlapLeft) {
-      playerX -= overlapLeft;
-    } else if (minOverlap == overlapRight) {
-      playerX += overlapRight;
-    } else if (minOverlap == overlapTop) {
-      playerY -= overlapTop;
-      velocityY = 0;
-      onGround = true;
-    } else if (minOverlap == overlapBottom) {
-      playerY += overlapBottom;
-      velocityY = 0;
+      if (minOverlap == overlapLeft) {
+        playerX -= overlapLeft;
+      } else if (minOverlap == overlapRight) {
+        playerX += overlapRight;
+      } else if (minOverlap == overlapTop) {
+        playerY -= overlapTop;
+        velocityY = 0;
+        onGround = true;
+      } else if (minOverlap == overlapBottom) {
+        playerY += overlapBottom;
+        velocityY = 0;
+      }
     }
   }
-}
 
 
   // カメラ位置
@@ -635,74 +644,73 @@ if (currentHP <= 0) {
 
   // ボスエリア制御
   // ボスエリア突入チェック
-if (playerX >= bossAreaStartX && bossPhase == 0) {
-  inBossArea = true;
-  bossPhase = 1;
-  bossPhaseTimer = 0;  // フェーズ1開始
-}
-
-// ボスエリア制御
-if (inBossArea) {
-  cameraX = bossCameraX;
-
-  // BGM切替（初回のみ）
-  if (!bossBGMPlaying) {
-    if (bgm != null && bgm.isPlaying()) {
-      bgm.pause();
-    }
-    if (bossbattleBGM != null) {
-      bossbattleBGM.rewind();
-      bossbattleBGM.loop();
-      bossbattleBGM.setGain(-15);
-    }
-    bossBGMPlaying = true;
+  if (playerX >= bossAreaStartX && bossPhase == 0) {
+    inBossArea = true;
+    bossPhase = 1;
+    bossPhaseTimer = 0;  // フェーズ1開始
   }
 
-  // ▼▼▼ ボスフェーズ制御 ▼▼▼
-  bossPhaseTimer++;
+  // ボスエリア制御
+  if (inBossArea) {
+    cameraX = bossCameraX;
 
-  if (bossPhase == 1) {
-    // 演出「WARNING!!」
-    if (bossPhaseTimer <= 180) {
-      textSize(64);
-      fill(255, 0, 0);
-      textAlign(CENTER, CENTER);
-      text("WARNING!!", width / 2, height / 2);
-    } else {
-      bossPhase = 2;
-      bossPhaseTimer = 0;
+    // BGM切替（初回のみ）
+    if (!bossBGMPlaying) {
+      if (bgm != null && bgm.isPlaying()) {
+        bgm.pause();
+      }
+      if (bossbattleBGM != null) {
+        bossbattleBGM.rewind();
+        bossbattleBGM.loop();
+        bossbattleBGM.setGain(-15);
+      }
+      bossBGMPlaying = true;
     }
-  } else if (bossPhase == 2) {
-    // ボス登場演出（スライドインなど）
-    bossX -= 2;
-    if (bossX <= bossTargetX) {
-      bossX = bossTargetX;
-      bossPhase = 3;
-      bossPhaseTimer = 0;
+
+    // ▼▼▼ ボスフェーズ制御 ▼▼▼
+    bossPhaseTimer++;
+
+    if (bossPhase == 1) {
+      // 演出「WARNING!!」
+      if (bossPhaseTimer <= 180) {
+        textSize(64);
+        fill(255, 0, 0);
+        textAlign(CENTER, CENTER);
+        text("WARNING!!", width / 2, height / 2);
+      } else {
+        bossPhase = 2;
+        bossPhaseTimer = 0;
+      }
+    } else if (bossPhase == 2) {
+      // ボス登場演出（スライドインなど）
+      bossX -= 2;
+      if (bossX <= bossTargetX) {
+        bossX = bossTargetX;
+        bossPhase = 3;
+        bossPhaseTimer = 0;
+      }
+    } else if (bossPhase == 3) {
+      // ボスと戦闘中
+      if (bossHP > 0) {
+        // ボス攻撃や移動処理などを書く
+      } else {
+        bossPhase = 4;
+        bossPhaseTimer = 0;
+      }
+    } else if (bossPhase == 4) {
+      // ボス撃破演出
+      if (bossPhaseTimer < 60) {
+        // 爆発など
+      } else {
+        // リセットや次のステージへ
+        bossPhase = 5; // 完了状態
+        // 画面暗転など演出もここで可能
+      }
     }
-  } else if (bossPhase == 3) {
-    // ボスと戦闘中
-    if (bossHP > 0) {
-      // ボス攻撃や移動処理などを書く
-    } else {
-      bossPhase = 4;
-      bossPhaseTimer = 0;
-    }
-  } else if (bossPhase == 4) {
-    // ボス撃破演出
-    if (bossPhaseTimer < 60) {
-      // 爆発など
-    } else {
-      // リセットや次のステージへ
-      bossPhase = 5; // 完了状態
-      // 画面暗転など演出もここで可能
-    }
+  } else {
+    // 通常プレイ中はプレイヤー中心
+    cameraX = playerX - width / 2;
   }
-
-} else {
-  // 通常プレイ中はプレイヤー中心
-  cameraX = playerX - width / 2;
-}
 
 
 
@@ -714,58 +722,67 @@ if (inBossArea) {
   drawPlayer();
 
   if (isAttacking) {
-  attackTimer--;
-  if (attackTimer <= 0) {
-    isAttacking = false;
-  }
+    attackTimer--;
+    if (attackTimer <= 0) {
+      isAttacking = false;
+    }
 
-  float axeX, axeY, axeW, axeH;
-  axeW = 20;
-  axeH = 40;
-  axeY = playerY + playerH / 2 - axeH / 2;
-  axeX = playerFacingRight ? playerX + playerW : playerX - axeW;
+    float axeX, axeY, axeW, axeH;
+    axeW = 20;
+    axeH = 40;
+    axeY = playerY + playerH / 2 - axeH / 2;
+    axeX = playerFacingRight ? playerX + playerW : playerX - axeW;
 
-  fill(255, 255, 0, 0);
-  rect(axeX, axeY, axeW, axeH);
+    fill(255, 255, 0, 0);
+    rect(axeX, axeY, axeW, axeH);
 
-  for (Enemy e : enemies) {
-    if (!e.isDead &&
+    for (Enemy e : enemies) {
+      if (!e.isDead &&
         axeX + axeW > e.x &&
         axeX < e.x + e.w &&
         axeY + axeH > e.y &&
         axeY < e.y + e.h &&
         !e.isInvincible) {
 
-      e.hp -= 10;
+        e.hp -= 10;
 
-      if (e.hp <= 0) {
-        e.isDead = true;
-      } else {
-        e.isInvincible = true;
-        e.invincibleTimer = 60;
+        // プレイヤーが敵に攻撃を当てたとき
+        if (playerX + playerW / 2 < e.x + e.w / 2) {
+          e.knockbackX = 8;  // 右へノックバック
+        } else {
+          e.knockbackX = -8; // 左へノックバック
+        }
+        e.knockbackY = -6; // 少し上へ吹っ飛ばす
+
+
+        if (e.hp <= 0) {
+          e.isDead = true;
+        } else {
+          e.isInvincible = true;
+          e.invincibleTimer = 60;
+        }
+
+        attackHit = true;
+        e.charging = false;
+        e.chargeCooldown = 60;
+        e.pauseTimer = 30;
+
+        println("攻撃成功！ 残りHP：" + e.hp);
+        if (attackSound != null && !attackSound.isPlaying()) {
+          attackSound.rewind();
+          attackSound.play();
+        }
+
+        break; // 多段ヒット防止
       }
-
-      attackHit = true;
-      e.charging = false;
-      e.chargeCooldown = 60;
-      e.pauseTimer = 30;
-
-      println("攻撃成功！ 残りHP：" + e.hp);
-      if (attackSound != null && !attackSound.isPlaying()) {
-        attackSound.rewind();
-        attackSound.play();
-      }
-
-      break; // 多段ヒット防止
     }
-  }
 
-  if (!attackHit && missattackSound != null && !missattackSound.isPlaying()) {
-    missattackSound.rewind();
-    missattackSound.play();
+    if (!attackHit && missattackSound != null && !missattackSound.isPlaying()) {
+      missattackSound.rewind();
+      missattackSound.play();
+    }
+    attackHit = false;
   }
-  attackHit = false;
-}
 
 
   // 足場描画
@@ -773,13 +790,13 @@ if (inBossArea) {
     p.display();
   }
 
-// 敵描画
-for (Enemy e : enemies) {
-  if (abs(e.x - playerX) < width * 1.5) { // プレイヤーの近くのみ更新
-    e.update();
-    e.display();
+  // 敵描画
+  for (Enemy e : enemies) {
+    if (abs(e.x - playerX) < width * 1.5) { // プレイヤーの近くのみ更新
+      e.update();
+      e.display();
+    }
   }
-}
 
 
 
@@ -791,8 +808,8 @@ for (Enemy e : enemies) {
 
   // 回復ポイント描画
   image(tyuukann, checkpointX, checkpointY, 40, 40);
-popMatrix();
- 
+  popMatrix();
+
   // 更新
 
 
@@ -800,23 +817,23 @@ popMatrix();
 
 
   // HPバー表示
-int barWidth = 200;
-int barHeight = 20;
-int barX = 10;
-int barY = 10;
+  int barWidth = 200;
+  int barHeight = 20;
+  int barX = 10;
+  int barY = 10;
 
-fill(0);
-rect(barX - 2, barY - 2, barWidth + 4, barHeight + 4); // 黒い枠
-fill(255, 0, 0);
-float hpRatio = float(currentHP) / maxHP;
-rect(barX, barY, barWidth * hpRatio, barHeight);
+  fill(0);
+  rect(barX - 2, barY - 2, barWidth + 4, barHeight + 4); // 黒い枠
+  fill(0, 100, 0);
+  float hpRatio = float(currentHP) / maxHP;
+  rect(barX, barY, barWidth * hpRatio, barHeight);
 
   fill(0);
   textSize(20);
   textAlign(RIGHT, TOP);
   text("Time: " + nf(secondsLeft, 2) + "s", width - 10, 10);
 
-  
+
   // ゲットしたアイテムを小さく表示
   for (int i = 0; i < collectedItems.size(); i++) {
     Item item = collectedItems.get(i);
@@ -892,13 +909,13 @@ void handleGameKey() {
     shiftPressed = true;
   }
   if (key == 'w' || key == 'W') {
-    isAttacking = true;
+     isAttacking = true;
     attackTimer = attackDuration;
-    attackRight = playerFacingRight;  // 向いている方向に攻撃
+     attackRight = playerFacingRight;  // 向いている方向に攻撃
   }
 
   if (key == ' ') {
-    if (jumpCount < maxJumpCount) {
+     if (jumpCount < maxJumpCount) {
       velocityY = jumpPower;
       onGround = false;
       jumpCount++;
@@ -907,8 +924,8 @@ void handleGameKey() {
         jumpSound.play();
       }
     }
-    jumpPressed = true;
-  }
+     jumpPressed = true;
+       }
 }
 
 void handleGameKeyReleased() {
@@ -918,7 +935,10 @@ void handleGameKeyReleased() {
   if (key == 'd' || key == 'D') {
     rightPressed = false;
   }
- if (key == ' ') {
+  if (key == CODED && keyCode == SHIFT) {
+    shiftPressed = false;
+  }
+  if (key ==' ') {
     jumpPressed = false;
   }
 }
@@ -948,6 +968,8 @@ class Enemy {
   float x, y, w, h;
   float speed = 2;
   float detectRange = 270;
+  float knockbackX = 0;
+  float knockbackY = 0;
   boolean charging = false;
   int chargeCooldown = 0;
   int pauseTimer = 0;
@@ -976,7 +998,7 @@ class Enemy {
 
   void update() {
     if (isDead) return;
- // 重なり回避のための処理（敵同士のチェック）
+    // 重なり回避のための処理（敵同士のチェック）
     for (Enemy other : enemies) {
       if (other != this && !other.isDead) {
         float distX = abs((x + w/2) - (other.x + other.w/2));
@@ -998,6 +1020,16 @@ class Enemy {
         isInvincible = false;
       }
     }
+    if (knockbackX != 0 || knockbackY != 0) {
+      x += knockbackX;
+      y += knockbackY;
+
+      knockbackX *= 0.95;
+      knockbackY *= 0.95;
+
+      if (abs(knockbackX) < 0.1) knockbackX = 0;
+      if (abs(knockbackY) < 0.1) knockbackY = 0;
+    }
 
     // --- 落下処理 ---
     if (!onGround) {
@@ -1013,7 +1045,7 @@ class Enemy {
         x < p.x + p.w &&
         y + h > p.y &&
         y + h - velocityY <= p.y
-      ) {
+        ) {
         y = p.y - h;
         velocityY = 0;
         onGround = true;
@@ -1033,7 +1065,7 @@ class Enemy {
     float exCenter = x + w / 2;
 
     boolean playerInRange = abs(pxCenter - exCenter) < detectRange;
-   // boolean sameHeight = abs(playerY - y) < 40;
+    // boolean sameHeight = abs(playerY - y) < 40;
 
     if (!charging && playerInRange/*&& sameHeight*/) {
       charging = true;
@@ -1041,51 +1073,50 @@ class Enemy {
       direction = (pxCenter > exCenter) ? 1 : -1;
     }
 
-   if (charging) {
-  chasingTimer++;
+    if (charging) {
+      chasingTimer++;
 
-  float nextX = x + direction * speed * 2;
-  boolean hitWall = false;
+      float nextX = x + direction * speed * 2;
+      boolean hitWall = false;
 
-  for (Platform p : platforms) {
-    if (nextX + w > p.x && nextX < p.x + p.w &&
-        y + h > p.y && y < p.y + p.h) {
-      hitWall = true;
-      break;
+      for (Platform p : platforms) {
+        if (nextX + w > p.x && nextX < p.x + p.w &&
+          y + h > p.y && y < p.y + p.h) {
+          hitWall = true;
+          break;
+        }
+      }
+
+      if (!hitWall) {
+        x = nextX;
+      } else {
+        // 壁にぶつかったので突進停止
+        charging = false;
+        pauseTimer = 30;
+        chargeCooldown = 60;
+        direction *= -1;
+      }
+      // プレイヤーと当たったら突進中止（任意）
+      if (collidesWith(playerX, playerY, playerW, playerH)) {
+        charging = false;
+        pauseTimer = 30;
+        direction *= -1;
+        chargeCooldown = 60;
+      }
+
+      float pxCenterNow = playerX + playerW / 2;
+      float exCenterNow = x + w / 2;
+      if (abs(pxCenterNow - exCenterNow) < 10) {
+        charging = false;
+        pauseTimer = 30;
+        direction *= -1;
+        chargeCooldown = 60;
+      } else if (chasingTimer > maxChasingTime) {
+        charging = false;
+        pauseTimer = 30;
+        chargeCooldown = 60;
+      }
     }
-  }
-
-  if (!hitWall) {
-    x = nextX;
-  } else {
-    // 壁にぶつかったので突進停止
-    charging = false;
-    pauseTimer = 30;
-    chargeCooldown = 60;
-    direction *= -1;
-  }
-// プレイヤーと当たったら突進中止（任意）
-if (collidesWith(playerX, playerY, playerW, playerH)) {
-  charging = false;
-  pauseTimer = 30;
-  direction *= -1;
-  chargeCooldown = 60;
-}
-
-  float pxCenterNow = playerX + playerW / 2;
-  float exCenterNow = x + w / 2;
-  if (abs(pxCenterNow - exCenterNow) < 10) {
-    charging = false;
-    pauseTimer = 30;
-    direction *= -1;
-    chargeCooldown = 60;
-  } else if (chasingTimer > maxChasingTime) {
-    charging = false;
-    pauseTimer = 30;
-    chargeCooldown = 60;
-  }
-}
-
   }
 
   void display() {
@@ -1112,15 +1143,15 @@ if (collidesWith(playerX, playerY, playerW, playerH)) {
   }
 
   void takeDamage(int damage) {
-  if (isInvincible || isDead) return;
-  hp -= damage;
-  if (hp <= 0 && !isDead) {
-    isDead = true;
-  } else {
-    isInvincible = true;
-    invincibleTimer = 30;
+    if (isInvincible || isDead) return;
+    hp -= damage;
+    if (hp <= 0 && !isDead) {
+      isDead = true;
+    } else {
+      isInvincible = true;
+      invincibleTimer = 30;
+    }
   }
-}
 
 
   boolean collidesWith(float px, float py, float pw, float ph) {
@@ -1132,80 +1163,81 @@ if (collidesWith(playerX, playerY, playerW, playerH)) {
 
 
 
-  class Item {
-    float x, y, w, h;
-    PImage texture;
+class Item {
+  float x, y, w, h;
+  PImage texture;
 
-    Item(float x, float y, float w, float h, PImage texture) {
-      this.x = x;
-      this.y = y;
-      this.w = w;
-      this.h = h;
-      this.texture = texture;
-    }
-
-    void display() {
-      if (texture != null) {
-        image(texture, x, y, w, h);
-      } else {
-        fill(255, 255, 0); // 黄色い四角で代用
-        rect(x, y, w, h);
-      }
-    }
+  Item(float x, float y, float w, float h, PImage texture) {
+    this.x = x;
+    this.y = y;
+    this.w = w;
+    this.h = h;
+    this.texture = texture;
   }
 
-  // ゲームリセット
-  void resetGame() {
-    if (reachedCheckpoint) {
-      playerX = checkpointX;
-      playerY = checkpointY;
+  void display() {
+    if (texture != null) {
+      image(texture, x, y, w, h);
     } else {
-      playerX = -90;
-      playerY = height - 100;
+      fill(255, 255, 0); // 黄色い四角で代用
+      rect(x, y, w, h);
     }
-    velocityX = 0;
-    velocityY = 0;
-    knockbackX = 0;
-    knockbackY = 0;
-    currentHP = 100;
-    totalTimeMillis = 5 * 60 * 1000;
-    invincible = false;
-    invincibleTimer = 0;
-    gameOver = false;
-    gameOverTimer = 0;
-    deathAnimationPlaying = false;
-    deathAnimationTimer = 0;
-   enemies.clear();
-    enemies.add(new Enemy(1400, height - 100, 40, 60,enemyTexture));
-enemies.add(new Enemy(3300, height - 205, 40, 60, enemyTexture1));
+  }
+}
+
+// ゲームリセット
+void resetGame() {
+  if (reachedCheckpoint) {
+    playerX = checkpointX;
+    playerY = checkpointY;
+  } else {
+    playerX = -90;
+    playerY = height - 100;
+  }
+  checkpointSoundPlayed = false;  // ここでリセット！
+  velocityX = 0;
+  velocityY = 0;
+  knockbackX = 0;
+  knockbackY = 0;
+  currentHP = 100;
+  totalTimeMillis = 5 * 60 * 1000;
+  invincible = false;
+  invincibleTimer = 0;
+  gameOver = false;
+  gameOverTimer = 0;
+  deathAnimationPlaying = false;
+  deathAnimationTimer = 0;
+  enemies.clear();
+  enemies.add(new Enemy(1400, height - 100, 40, 60, enemyTexture));
+  enemies.add(new Enemy(3300, height - 205, 40, 60, enemyTexture1));
   enemies.add(new Enemy(3400, height - 205, 40, 60, enemyTexture2));
   enemies.add(new Enemy(3500, height - 205, 40, 60, enemyTexture3));
   enemies.add(new Enemy(3600, height - 205, 40, 60, enemyTexture));
   enemies.add(new Enemy(3700, height - 205, 40, 60, enemyTexture));
-    healed = false; // 回復状態を初期化
-    items.clear();
-    items.add(new Item(630, height - 270, 30, 30, itemTexture));
-    items.add(new Item(1880, height - 350, 30, 30, itemTexture));
-    items.add(new Item(4700, height - 400, 30, 30, itemTexture));
-    collectedItems.clear();
-    startTime = millis();  // ゲームリセット時にも時間をリセット
-  }
+  healed = false; // 回復状態を初期化
+  items.clear();
+  items.add(new Item(630, height - 270, 30, 30, itemTexture));
+  items.add(new Item(1880, height - 350, 30, 30, itemTexture));
+  items.add(new Item(4700, height - 400, 30, 30, itemTexture));
+  collectedItems.clear();
+  startTime = millis();  // ゲームリセット時にも時間をリセット
+}
 
-  //サウンド停止
-  void stop() {
-    if (bgm != null) {
-      bgm.close();
-    }
-    jumpSound.close();
-    damageSound.close();
-    enterSound.close();
-    itemgetSound.close();
-    lifeitemgetSound.close();
-    attackSound.close();
-    runSound.close();
-    missattackSound.close();
-    gameoverSound.close();
-    bossbattleBGM.close();
-    minim.stop();
-    super.stop();
+//サウンド停止
+void stop() {
+  if (bgm != null) {
+    bgm.close();
   }
+  jumpSound.close();
+  damageSound.close();
+  enterSound.close();
+  itemgetSound.close();
+  lifeitemgetSound.close();
+  attackSound.close();
+  runSound.close();
+  missattackSound.close();
+  gameoverSound.close();
+  bossbattleBGM.close();
+  minim.stop();
+  super.stop();
+}
