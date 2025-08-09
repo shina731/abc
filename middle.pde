@@ -142,6 +142,8 @@ void initGame() {
   // 空中にアイテムを設置
   items.add(new Item(630, height - 270, 30, 30, itemTexture));
   items.add(new Item(1880, height - 350, 30, 30, itemTexture));
+  items.add(new Item(2450, height - 400, 30, 30, itemTexture));
+  items.add(new Item(3500, height - 100, 30, 30, itemTexture));
   items.add(new Item(4700, height - 400, 30, 30, itemTexture));
   // 地面
   int[][] holeRanges = {
@@ -165,7 +167,7 @@ void initGame() {
 
   checkpointY = height - 100;  // 最初の開始地点
 
-  // 空中ブロック
+ // 空中ブロック
   platforms.add(new Platform(200, height - 120, 80, 20));
   platforms.add(new Platform(400, height - 180, 80, 20));
   platforms.add(new Platform(600, height - 240, 80, 20));
@@ -175,6 +177,7 @@ void initGame() {
   platforms.add(new Platform(1870, height - 300, 50, 20));
   platforms.add(new Platform(1980, height - 225, 50, 20));
   platforms.add(new Platform(2090, height - 150, 50, 20));
+  platforms.add(new Platform(2550, height - 300, 40, 20));
   platforms.add(new Platform(2650, height - 150, 40, 20));
   platforms.add(new Platform(3400, height - 125, 30, 20));
   platforms.add(new Platform(3600, height - 125, 30, 20));  
@@ -1430,8 +1433,10 @@ void resetGame() {
   rangedEnemies.add(new RangedEnemy(3600, 200, 50, 50, enemyTexture3));
   healed = false; // 回復状態を初期化
   items.clear();
-  items.add(new Item(630, height - 270, 30, 30, itemTexture));
+ items.add(new Item(630, height - 270, 30, 30, itemTexture));
   items.add(new Item(1880, height - 350, 30, 30, itemTexture));
+  items.add(new Item(2450, height - 400, 30, 30, itemTexture));
+  items.add(new Item(3500, height - 100, 30, 30, itemTexture));
   items.add(new Item(4700, height - 400, 30, 30, itemTexture));
   collectedItems.clear();
   startTime = millis();  // ゲームリセット時にも時間をリセット
