@@ -49,8 +49,8 @@ int edgePushTimer = 0;
 // ボス関連
 float bossbX = 500;
 float bossY = 0;
-float bossW = 190;
-float bossH =250;
+float bossW = 210;
+float bossH =290;
 float bossSpeedX = 0;
 float bossSpeedY = 0;
 int bossMoveTimer = 0; // 次の行動までのカウントダウン
@@ -65,6 +65,9 @@ PImage bossImage;  // 通常ボス画像
 PImage bossLightningImage;//雷攻撃中のボス
 PImage lightningImage;//雷画像
 PImage bossbg;
+PImage waitImage;//警報中のボス
+PImage bossAttack;//ボスの攻撃
+
 //サウンド
 import ddf.minim.*;//Minimライブラリのインポート、サウンド関連のクラスを使えるようにする
 //Minim minim;//Minimのメインオブジェクト、サウンドファイルの読み込みや再生、初期化してから音声をロード
@@ -76,21 +79,23 @@ AudioPlayer goSound; //goの時の音
 AudioPlayer lightningWarningSound; // 雷警告音
 AudioPlayer lightningSound;//雷落下
 
-ArrayList<Missile> bossMissiles = new ArrayList<Missile>();
+ArrayList<BossMissile> bossMissiles = new ArrayList<BossMissile>();
 int missileTimer = 0;
 
 //ボス雷
-int lightningInterval = 10000; // 10秒ごと
+int lightningInterval = 5000; // 10秒ごと
 int lastLightningTime = 0;
 boolean showLightning = false;
 boolean isLightningActive = false;
 int lightningX = 0;
-int lightningDuration = 20; // フレーム数で表示時間
+int lightningDuration = 2000; // フレーム数で表示時間
 int lightningTimer = 0;
 int lightningWarningLeadTime = 1000; // 2秒前に警告音
 boolean lightningWarningPlayed = false;
 boolean isChargingLightning = false;
 boolean lightningEnabled = false;
+int lightningCancelHits = 0;           // 雷をキャンセルするための攻撃回数
+boolean lightningCanceled = false;     // 雷がキャンセルされたかどうか
 
 // プレイヤーとボスの当たり判定（矩形判定）
 boolean isOverlap(float x1, float y1, float w1, float h1,
@@ -103,7 +108,7 @@ boolean isOverlap(float x1, float y1, float w1, float h1,
 }
 
 // アイテム数（前ステージで取得した数）
-int itemCount = 3;
+int itemCount = 5;
 PGraphics bossbgLayer;
 
 void bossGame() {
@@ -120,6 +125,8 @@ void bossGame() {
   bossImage = loadImage("boss.png");
   bossLightningImage = loadImage("boss_lightning.png");
   lightningImage = loadImage("lightning.png");
+  waitImage = loadImage("boss.wait.png");
+  bossAttack = loadImage("paper.png");
   
    //日本語対応_字体「メイリオ」
   PFont font = createFont("Meiryo", 30);
@@ -135,8 +142,6 @@ void bossGame() {
   lightningWarningSound = minim.loadFile("lightning_warning.mp3");
   lightningSound = minim.loadFile("lightning.mp3");
 }
-
-
 
 void drawBossGame() {
   background(0);
@@ -246,6 +251,11 @@ if (showLightning && lightningImage != null) {
     if (attackTimer <= 0) {
       attackHit = false;
     }
+  if (attackTimer == attackDuration - 1) {
+      if (checkBossHit()) {
+        applyDamageToBoss();
+      }
+    }
   }
 }
 
@@ -271,15 +281,14 @@ void handlePlayerMovement() {
       knockbackX = 0;
       knockbackY = 0;
     }
-  } else {
-    
+  } else {    
     if (edgePushTimer > 0) {
       edgePushTimer--;
       return;  // 押し戻し後、一定時間は移動させない
     }
     
 // ボスとの接触チェック 
-    boolean currentlyTouchingBoss = isOverlap(playerbX, playerbY, playerW, playerH, bossbX, bossY, bossW, bossH);
+    boolean currentlyTouchingBoss = isOverlap(playerbX, playerbY, playerbW, playerbH, bossbX, bossY, bossW, bossH);
 
     // 左右移動は「接触していない」かつ「クールダウン中でない」場合のみ可能
     boolean canMoveHorizontally = (!currentlyTouchingBoss && bossTouchCooldown == 0);
@@ -344,6 +353,7 @@ void handlePlayerMovement() {
      }
     // プレイヤーが画面外に出ないよう制限
     playerbX = constrain(playerbX, 0, width - playerW);
+    playerbY = constrain(playerbY, 0, height - playerbH);  // ← これを追加
     }
 }
 
@@ -351,7 +361,15 @@ void handleBossdrawPlayer() {
   PImage currentImage = (attackHit) ? playerAttackImageR : playerTexture;
   pushMatrix();
 
+  if (attackHit) {
+    currentImage = playerAttackImageR; // 常に右向き画像
+  } else {
+    currentImage = playerTexture; // 通常画像（今は反転不要としておきます）
+  }
+
   boolean drawFacingRight = attackHit ? attackRight : playerFacingRight;
+
+
 
   // 描画に使う幅・高さ（必要なら currentImage.width/currentImage.height を使ってもOK）
   float drawW = playerbW;
@@ -368,10 +386,8 @@ void handleBossdrawPlayer() {
   } else {
     image(currentImage, playerbX, drawY, drawW, drawH);
   }
-
   popMatrix();
 }
-
 
 void drawPlayerStatus() {
   fill(255); // 文字色：白
@@ -399,7 +415,10 @@ void drawPlayerStatus() {
 // ボスを描画
 void drawBoss() {
   if (!bossDefeated) {
-    if (showLightning) {
+  if (lightningWarningSound != null && lightningWarningSound.isPlaying()) {
+      // 警告音が鳴っている間は警報画像を表示
+      image(waitImage, bossbX, bossY, bossW, bossH);
+    } else if (showLightning) {
       image(bossLightningImage, bossbX, bossY, bossW, bossH);  // 雷用の画像
     } else {
       image(bossImage, bossbX, bossY, bossW, bossH);  // 通常の画像
@@ -518,7 +537,7 @@ void updateBossAttack() {
   for (int i = bossMissiles.size() - 1; i >= 0; i--) {
     Missile m = bossMissiles.get(i);
     m.update();
-    m.display();
+    image(bossAttack, m.x, m.y, m.w, m.h);
     
     // 当たり判定（矩形同士の簡単な判定）
   if (playerbX < m.x + m.w &&
@@ -549,7 +568,6 @@ void updateBossAttack() {
   }
 }
 
-
 void updateMissiles() {
   for (int i = bossMissiles.size() - 1; i >= 0; i--) {
     Missile m = bossMissiles.get(i);
@@ -562,7 +580,7 @@ void updateMissiles() {
 }
 
 void updateLightning() {
-  if (bossHP > 40) return; // 条件を満たさなければ何もしない
+  if (bossHP > 60) return; // 条件を満たさなければ何もしない
 
   if (!lightningEnabled) {
     lightningEnabled = true;
@@ -579,6 +597,8 @@ void updateLightning() {
     }
     lightningWarningPlayed = true;
     isChargingLightning = true;
+    lightningCancelHits = 0;        // カウントをリセット
+    lightningCanceled = false;      // フラグもリセット
   }
 
   // 実際に雷が発生
@@ -604,7 +624,7 @@ void updateLightning() {
     // 落雷位置とダメージ処理
     lightningX = int(playerbX + playerbW / 2 + random(-3, 3));
     if (lightningX >= playerbX && lightningX <= playerbX + playerbW) {
-      playerHP -= 15;
+      playerHP -= 20;
       playerHP = max(playerHP, 0);
       println("プレイヤーに15ダメージ！（雷）残りHP: " + playerHP);
 
@@ -624,6 +644,8 @@ void applyKnockback(float forceX, float forceY) {
   onGround = false; // 吹き飛び中は空中扱いにする場合
 }
 
+int jumpCount = 0;
+int maxJumpCount = 2;  // 2段ジャンプまで許可
 
 // キー押し処理
 void handleBossKey() {
@@ -645,9 +667,6 @@ void handleBossKey() {
   if (key == 'd' || key == 'D') {
     rightPressed = true;
     playerFacingRight = true;
-  }
-  if (key == CODED && keyCode == SHIFT) {
-    shiftPressed = true;
   }
   if (gameOverDisplayed && key == ENTER) {
     exit();
@@ -695,7 +714,6 @@ void handleBossKey() {
 void handleBossKeyReleased() {
   if (key == 'a' || key == 'A') leftPressed = false;
   if (key == 'd' || key == 'D') rightPressed = false;
-  if (key == CODED && keyCode == SHIFT) shiftPressed = false;
 }
 
 // 攻撃が当たっているか判定
@@ -746,7 +764,15 @@ void applyDamageToBoss() {
       missattackSound.play();
   }
   attackHit = false; // リセット
-  
+
+  // ⚡ 雷チャージ中はダメージを与えず、キャンセル用カウントだけ増やす
+  if (isChargingLightning) {
+    lightningCancelHits++;
+    println("⚡雷キャンセルのための攻撃！ 現在: " + lightningCancelHits + "回");
+    return; // ← ここで終了（HP減らさない）
+  }
+
+
   bossHP -= damage;
   bossHP = max(bossHP, 0);
 
@@ -756,3 +782,4 @@ void applyDamageToBoss() {
     bossDefeated = true;
   }
 }
+
