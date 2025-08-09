@@ -650,8 +650,8 @@ void applyKnockback(float forceX, float forceY) {
   onGround = false; // 吹き飛び中は空中扱いにする場合
 }
 
-int jumpCount = 0;
-int maxJumpCount = 2;  // 2段ジャンプまで許可
+//int jumpCount = 0;
+//int maxJumpCount = 2;  // 2段ジャンプまで許可
 
 // キー押し処理
 void handleBossKey() {
@@ -788,5 +788,6 @@ void applyDamageToBoss() {
     bossDefeated = true;
   }
 }
+
 
 
