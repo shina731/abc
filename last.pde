@@ -143,6 +143,12 @@ void bossGame() {
   lightningSound = minim.loadFile("lightning.mp3");
 }
 
+class BossMissile {
+  float x, y;
+  float speedX, speedY;
+  float w =80;
+  float h = 32;
+
 void drawBossGame() {
   background(0);
   
@@ -782,4 +788,5 @@ void applyDamageToBoss() {
     bossDefeated = true;
   }
 }
+
 
