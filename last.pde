@@ -9,9 +9,9 @@ boolean playedGo = false;
 
 // プレイヤー変数
 float playerbX = 100;
-float playerbY = 90;
-//float playerW = 100;
-//float playerH = 90;
+float playerbY = 0;
+float playerbW = 100;
+float playerbH = 90;
 //float velocityX = 0;
 //float velocityY = 0;
 //float gravity = 0.8;
@@ -22,7 +22,7 @@ float playerbY = 90;
 int playerHP = 100;        // 初期HP
 int maxplayerHP = 100;     // 最大HP（表示用）
 //int bossTouchCooldown = 0;  // ボス接触後に移動禁止にする時間（フレーム数）
-
+boolean doubleJumpUsed = false;  // 2段ジャンプを使ったかどうか
 boolean gameOverDisplayed = false;
 boolean isGameOver = false;
 
@@ -49,8 +49,8 @@ int edgePushTimer = 0;
 // ボス関連
 float bossbX = 500;
 float bossY = 0;
-float bossW = 210;
-float bossH =290;
+float bossW = 190;
+float bossH =250;
 float bossSpeedX = 0;
 float bossSpeedY = 0;
 int bossMoveTimer = 0; // 次の行動までのカウントダウン
@@ -64,7 +64,7 @@ boolean bossDefeated = false;
 PImage bossImage;  // 通常ボス画像
 PImage bossLightningImage;//雷攻撃中のボス
 PImage lightningImage;//雷画像
-
+PImage bossbg;
 //サウンド
 import ddf.minim.*;//Minimライブラリのインポート、サウンド関連のクラスを使えるようにする
 //Minim minim;//Minimのメインオブジェクト、サウンドファイルの読み込みや再生、初期化してから音声をロード
@@ -104,14 +104,14 @@ boolean isOverlap(float x1, float y1, float w1, float h1,
 
 // アイテム数（前ステージで取得した数）
 int itemCount = 3;
+PGraphics bossbgLayer;
 
 void bossGame() {
   size(800, 400);
   textAlign(CENTER, CENTER);
   textSize(20);
-  
   // Y座標は地面に立たせる
-  playerbY = height - playerH;
+  playerbY = height - playerbH;
   bossY = height - bossH;
   
   //playerTexture = loadImage("player.png");
@@ -299,8 +299,8 @@ void handlePlayerMovement() {
     nextY += velocityY;
 
     // 地面との判定
-    if (nextY >= height - playerH) {
-      nextY = height - playerH;
+    if (nextY >= height - playerbH) {
+      nextY = height - playerbH;
       velocityY = 0;
       onGround = true;
     }else {
@@ -330,7 +330,7 @@ void handlePlayerMovement() {
       } else {
       if (playerbX < bossbX) {
         // プレイヤーがボスの左にいる場合 → 左へ押し戻す
-         playerbX = bossbX - playerW - 1;
+         playerbX = bossbX - playerbW - 1;
        } else {
         // プレイヤーがボスの右にいる場合 → 右へ押し戻す
          playerbX = bossbX + bossW + 1;
@@ -347,29 +347,31 @@ void handlePlayerMovement() {
     }
 }
 
-// プレイヤーを描画
 void handleBossdrawPlayer() {
-  PImage currentImage;
+  PImage currentImage = (attackHit) ? playerAttackImageR : playerTexture;
+  pushMatrix();
 
-  if (attackHit) {
-    currentImage = playerAttackImageR; // 常に右向き画像
-  } else {
-    currentImage = playerTexture; // 通常画像（今は反転不要としておきます）
-  }
+  boolean drawFacingRight = attackHit ? attackRight : playerFacingRight;
 
-   pushMatrix();
-   boolean drawFacingRight = attackHit ? attackRight : playerFacingRight;
+  // 描画に使う幅・高さ（必要なら currentImage.width/currentImage.height を使ってもOK）
+  float drawW = playerbW;
+  float drawH = playerbH;
 
- if (!drawFacingRight) {
-    translate(playerbX + playerW, playerbY);
+  // playerbY を「足元」の Y 座標として扱う場合、描画位置は上にずらす
+  float drawY = playerbY - drawH;
+
+  if (!drawFacingRight) {
+    // 左向きに反転して描画（translate の Y に drawY を使うのがポイント）
+    translate(playerbX + drawW, drawY);
     scale(-1, 1);
-    image(currentImage, 0, 0, 100, 90);
+    image(currentImage, 0, 0, drawW, drawH);
   } else {
-    image(currentImage, playerbX, playerbY, 100, 90);
+    image(currentImage, playerbX, drawY, drawW, drawH);
   }
 
   popMatrix();
 }
+
 
 void drawPlayerStatus() {
   fill(255); // 文字色：白
@@ -384,7 +386,7 @@ void drawPlayerStatus() {
   float y = 40;
   
   noFill();
-  stroke(255);  // 赤
+  stroke(0,100,0);  // 赤
   rect(x, y, barWidth, barHeight);
   
   // 枠線
@@ -470,8 +472,8 @@ void updateBossAttack() {
       float startX = bossX + bossW / 2;
       float startY = bossY + bossH / 3;
       // プレイヤー座標
-      float targetX = playerX + playerW / 2;
-      float targetY = playerY + playerH / 2;
+      float targetX = playerbX + playerbW / 2;
+      float targetY = playerbY + playerbH / 2;
 
       // 目標方向ベクトル
       float dx = targetX - startX;
@@ -519,17 +521,17 @@ void updateBossAttack() {
     m.display();
     
     // 当たり判定（矩形同士の簡単な判定）
-  if (playerX < m.x + m.w &&
-      playerX + playerW > m.x &&
-      playerY < m.y + m.h &&
-      playerY + playerH > m.y) {
+  if (playerbX < m.x + m.w &&
+      playerbX + playerbW > m.x &&
+      playerbY < m.y + m.h &&
+      playerbY + playerbH > m.y) {
 
     // ミサイルを消す
     bossMissiles.remove(i);
     
     if (!isKnockback && !isGameOver) {
        // 吹き飛ばしをプレイヤーに適用
-    float knockbackForceX = (playerX < m.x) ? -8 : 8;  // ミサイルの位置に応じて左右反転
+    float knockbackForceX = (playerbX < m.x) ? -8 : 8;  // ミサイルの位置に応じて左右反転
     float knockbackForceY = -10; // 上方向にも吹き飛ばす
     applyKnockback(knockbackForceX, knockbackForceY);
     playerHP -= 5;
@@ -600,8 +602,8 @@ void updateLightning() {
     isChargingLightning = false;
 
     // 落雷位置とダメージ処理
-    lightningX = int(playerX + playerW / 2 + random(-3, 3));
-    if (lightningX >= playerX && lightningX <= playerX + playerW) {
+    lightningX = int(playerbX + playerbW / 2 + random(-3, 3));
+    if (lightningX >= playerbX && lightningX <= playerbX + playerbW) {
       playerHP -= 15;
       playerHP = max(playerHP, 0);
       println("プレイヤーに15ダメージ！（雷）残りHP: " + playerHP);
@@ -659,31 +661,30 @@ void handleBossKey() {
   if (key == ' ') {
     jumpPressed = true;
     if (onGround) {
-      //velocityY = shiftPressed ? highJumpPower : jumpPower;
+       velocityY = jumpPower;
       onGround = false;
+       doubleJumpUsed = false; // 地上ジャンプ時にリセット
       if (jumpSound != null && !jumpSound.isPlaying()) {
         jumpSound.rewind();
         jumpSound.play();
       }
     }
-  }
-
-  // 攻撃（右）
-  if (key == 'k' || key == 'K') {
-    attackHit = true;
-    attackTimer = attackDuration;
-    attackRight = true;
-
-    if (checkBossHit()) {
-      applyDamageToBoss();
+     // 空中にいて、まだ2段ジャンプを使っていないとき
+  else if (!doubleJumpUsed) {
+    velocityY = jumpPower;
+    doubleJumpUsed = true;
+    if (jumpSound != null && !jumpSound.isPlaying()) {
+      jumpSound.rewind();
+      jumpSound.play();
     }
   }
+  }
 
-  // 攻撃（左）
-  if (key == 'h' || key == 'H') {
+ // 攻撃（右）
+  if (key == 'w' || key == 'W') {
     attackHit = true;
     attackTimer = attackDuration;
-    attackRight = false;
+    attackRight = playerFacingRight;
 
     if (checkBossHit()) {
       applyDamageToBoss();
@@ -701,10 +702,10 @@ void handleBossKeyReleased() {
 boolean checkBossHit() {
   if (bossDefeated) return false;
 
-  float attackX = attackRight ? playerX + playerW : playerX - 30;
-  float attackY = playerY + 10;
+  float attackX = attackRight ? playerbX + playerbW : playerbX - 30;
+  float attackY = playerbY + 10;
   float attackW = 30;
-  float attackH = playerH - 20;
+  float attackH = playerbH - 20;
 
   return (attackX < bossX + bossW &&
           attackX + attackW > bossX &&

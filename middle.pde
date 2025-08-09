@@ -1366,7 +1366,7 @@ if (collidesWith(playerX, playerY, playerW, playerH)) {
 
   void display() {
     if (!active) return;
-    fill(255, 0, 0);
+    fill(139,69,19);
     ellipse(x, y, w, h);
   }
 
